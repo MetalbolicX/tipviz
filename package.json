@@ -1,6 +1,6 @@
 {
   "name": "tipviz",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Insights, on hover with a D3.js tooltip.",
   "type": "module",
   "main": "dist/index.js",

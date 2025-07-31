@@ -24,6 +24,7 @@
     "typescript"
   ],
   "scripts": {
+    "docs": "docsify serve docs",
     "start": "echo \"Hello world\"",
     "build": "tsdown",
     "dev": "vite"
@@ -41,7 +42,8 @@
   "files": ["dist"],
   "license": "MIT",
   "dependencies": {
-    "d3": "^7.9.0"
+    "d3": "^7.9.0",
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "d3": "^7.9.0"

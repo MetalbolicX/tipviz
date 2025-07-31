@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Merged logo: d3.js logo inside tooltip icon, d3 logo shifted right -->
+<svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tooltip outline -->
+  <path d="M19 4H5C3.89543 4 3 4.89543 3 6V16C3 17.1046 3.89543 18 5 18H8.17157C8.70201 18 9.21071 18.2107 9.58579 18.5858L11.2929 20.2929C11.6834 20.6834 12.3166 20.6834 12.7071 20.2929L14.4142 18.5858C14.7893 18.2107 15.298 18 15.8284 18H19C20.1046 18 21 17.1046 21 16V6C21 4.89543 20.1046 4 19 4Z" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+  <!-- d3.js logo scaled and shifted right inside tooltip -->
+  <g transform="translate(6,5) scale(0.13)">
+    <clipPath id="clip">
+      <path d="M0,0h7.75a45.5,45.5 0 1 1 0,91h-7.75v-20h7.75a25.5,25.5 0 1 0 0,-51h-7.75zm36.2510,0h32a27.75,27.75 0 0 1 21.331,45.5a27.75,27.75 0 0 1 -21.331,45.5h-32a53.6895,53.6895 0 0 0 18.7464,-20h13.2526a7.75,7.75 0 1 0 0,-15.5h-7.75a53.6895,53.6895 0 0 0 0,-20h7.75a7.75,7.75 0 1 0 0,-15.5h-13.2526a53.6895,53.6895 0 0 0 -18.7464,-20z"/>
+    </clipPath>
+    <linearGradient id="gradient-1" gradientUnits="userSpaceOnUse" x1="7" y1="64" x2="50" y2="107">
+      <stop offset="0" stop-color="#f9a03c"/>
+      <stop offset="1" stop-color="#f7974e"/>
+    </linearGradient>
+    <linearGradient id="gradient-2" gradientUnits="userSpaceOnUse" x1="2" y1="-2" x2="87" y2="84">
+      <stop offset="0" stop-color="#f26d58"/>
+      <stop offset="1" stop-color="#f9a03c"/>
+    </linearGradient>
+    <linearGradient id="gradient-3" gradientUnits="userSpaceOnUse" x1="45" y1="-10" x2="108" y2="53">
+      <stop offset="0" stop-color="#b84e51"/>
+      <stop offset="1" stop-color="#f68e48"/>
+    </linearGradient>
+    <g clip-path="url(#clip)">
+      <path d="M-100,-102m-28,0v300h300z" fill="url(#gradient-1)"/>
+      <path d="M-100,-102m28,0h300v300z" fill="url(#gradient-3)"/>
+      <path d="M-100,-102l300,300" fill="none" stroke="url(#gradient-2)" stroke-width="40"/>
+    </g>
+  </g>
+</svg>

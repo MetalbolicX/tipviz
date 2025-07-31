@@ -1,7 +1,7 @@
 # tipviz
 
 <div align="center">
-  <img src="./images/logo.png" alt="tipviz Logo" width="200" height="200" />
+  <img src="./docs/_media/tipviz-logo.svg" alt="tipviz Logo" width="200" height="200" />
 </div>
 
 > `tipviz` Discover insights on hover with a D3.js tooltip.
@@ -12,8 +12,9 @@
 
 ## Features
 
-1.
-2.
+- Customizable templateting for tooltips.
+- Customizable styles for tooltips.
+- Easy integration with existing D3.js projects.
 
 ## 🚀 Quick Installation
 
@@ -37,8 +38,7 @@ Hello
 
 ## ✍ Do you want to learn more?
 
-1.
-2.
+- Learn more about [D3.js](https://d3js.org/).
 
 ## Contributing
 
@@ -46,18 +46,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Technologies used
 
-<table>
+<table style="border: none;">
   <tr>
     <td align="center">
-      <a href="https://vanjs.org/" target="_blank">
-        <img src="./images/vanjs-logo.png" alt="VanJS" width="42" height="42" /><br/>
-        <b>VanJS</b><br/>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://rescript-lang.org/" target="_blank">
-        <img src="./images/rescript-logo.png" alt="ReScript" width="42" height="42" /><br/>
-        <b>ReScript</b><br/>
+      <a href="https://d3js.org/" target="_blank">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Logo_D3.svg" alt="D3.js" width="42" height="42" /><br/>
+        <b>D3.js</b><br/>
       </a>
     </td>
   </tr>

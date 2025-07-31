@@ -62,10 +62,10 @@ function createScatterPlot(
   const tooltip = new TipViz().setHtml(
     (point) =>
       /*html*/`
-      <div class="tooltip-content">
-        <strong>X:</strong> ${point.x}<br>
-        <strong>Y:</strong> ${point.y}
-      </div>`.trim()
+      <ul class="tooltip-content">
+        <li><strong>X:</strong> ${point.x}</li>
+        <li><strong>Y:</strong> ${point.y}</li>
+      </ul>`.trim()
   ).styles(/*css*/`
     .tooltip-content {
       background: salmon;
@@ -79,6 +79,11 @@ function createScatterPlot(
       display: block;
       margin-bottom: 4px;
       font-weight: bold;
+    }
+    .tooltip-content li {
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
   `.trim());
 

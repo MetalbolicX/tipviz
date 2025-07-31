@@ -78,15 +78,14 @@ export class TipViz {
 
     let content = this.html.apply(this, params);
     if (this.htmlStyles) {
-      // Only apply styles to direct children of the tooltip div
-      // Replace each selector with .d3-tooltip > selector
+      // Scope styles to any descendant of the tooltip div
       const tooltipClass = "d3-tooltip";
       const scopedCss = this.htmlStyles.replace(/(^|\})\s*([^\{\}]+)\s*\{/g, (m, brace, selector) => {
         if (selector.trim().startsWith("@")) return m;
-        // For each selector, prefix with .d3-tooltip >
+        // For each selector, prefix with .d3-tooltip (descendant)
         const scoped = selector
           .split(",")
-          .map(s => `.${tooltipClass} > ` + s.trim())
+          .map(s => `.${tooltipClass} ` + s.trim())
           .join(", ");
         return `${brace} ${scoped} {`;
       });
@@ -104,7 +103,8 @@ export class TipViz {
     nodel.html(content).style("opacity", 1).style("pointer-events", "all");
     while (i--) nodel.classed(this.directions[i], false);
     nodel
-      .classed(dir, true)
+      // .classed(dir, true)
+      .classed("d3-tooltip", true)
       .style("top", `${coords.top + poffset[0] + scrollTop}px`)
       .style("left", `${coords.left + poffset[1] + scrollLeft}px`);
     return this;

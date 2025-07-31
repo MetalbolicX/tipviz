@@ -18,6 +18,7 @@ export class TipViz {
   private direction: DirectionFn = () => "n";
   private offset: OffsetCallback = () => [0, 0];
   private html: HtmlCallback = () => " ";
+  private htmlStyles: string = "";
   private rootElement: HTMLElement = document.body;
   private node: HTMLDivElement | null = null;
   private svg: SVGSVGElement | null = null;
@@ -44,6 +45,11 @@ export class TipViz {
   /**
    * Attaches the tooltip to a D3 SVG selection. Initializes the SVG point for coordinate calculations.
    * @param vis - D3 selection of the SVG element
+   * @example
+   * ```typescript
+   * const tooltip = new TipViz();
+   * tooltip.attachTo(d3.select("svg"));
+   * ```
    */
   public attachTo(
     vis: Selection<SVGSVGElement, unknown, null, undefined>
@@ -60,16 +66,32 @@ export class TipViz {
    * Shows the tooltip with the given data and event context. The last argument should be the SVG element to anchor the tooltip.
    * @param args - Data, event, and the SVG element (last argument)
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.show("Tooltip content", event, svgElement);
+   * ```
    */
   public show(...args: any[]): this {
-    // if (args.length && args[args.length - 1] instanceof SVGElement) {
-    //   this.target = args.pop();
-    // }
     const lastArg = args.at(-1);
     this.target = lastArg instanceof SVGGraphicsElement ? lastArg : null;
     const params = this.target ? args.slice(0, -1) : args;
 
-    const content = this.html.apply(this, params);
+    let content = this.html.apply(this, params);
+    if (this.htmlStyles) {
+      // Only apply styles to direct children of the tooltip div
+      // Replace each selector with .d3-tooltip > selector
+      const tooltipClass = "d3-tooltip";
+      const scopedCss = this.htmlStyles.replace(/(^|\})\s*([^\{\}]+)\s*\{/g, (m, brace, selector) => {
+        if (selector.trim().startsWith("@")) return m;
+        // For each selector, prefix with .d3-tooltip >
+        const scoped = selector
+          .split(",")
+          .map(s => `.${tooltipClass} > ` + s.trim())
+          .join(", ");
+        return `${brace} ${scoped} {`;
+      });
+      content = `<style>${scopedCss}</style>` + content;
+    }
     const poffset = this.offset.apply(this, params);
     const dir = this.direction.apply(this, params) as Direction;
     const nodel = this.#getNodeEl();
@@ -87,10 +109,49 @@ export class TipViz {
       .style("left", `${coords.left + poffset[1] + scrollLeft}px`);
     return this;
   }
+  /**
+    * Sets custom CSS styles for the tooltip HTML content. The styles will be scoped to the tooltip node.
+    * @param css - CSS string to apply to the tooltip content
+    * @returns The TipViz instance
+    * @example
+    * ```typescript
+    * const tooltip = new TipViz();
+    * tooltip.setHtml((data) => `
+    *   <div class="tooltip-content">
+    *     <strong>${data.title}</strong>
+    *     <p>${data.description}</p>
+    *   </div>
+    * `);
+    *
+    * tooltip.styles(`
+    *   .tooltip-content {
+    *     background: #fff;
+    *     color: #333;
+    *     border-radius: 4px;
+    *     padding: 8px 12px;
+    *     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    *     font-size: 14px;
+    *   }
+    *   .tooltip-content strong {
+    *     display: block;
+    *     margin-bottom: 4px;
+    *     font-weight: bold;
+    *   }
+    * `);
+    * ```
+    */
+  public styles(css: string): this {
+    this.htmlStyles = css;
+    return this;
+  }
 
   /**
    * Hides the tooltip.
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.hide();
+   * ```
    */
   public hide(): this {
     const nodel = this.#getNodeEl();
@@ -103,6 +164,10 @@ export class TipViz {
    * @param name - Attribute name
    * @param value - Attribute value (optional)
    * @returns The D3Tip instance or the attribute value
+   * @example
+   * ```typescript
+   * tooltip.attr("data-tooltip", "My Tooltip");
+   * ```
    */
   public attr(name: string, value?: string): this | string | null {
     const nodel = this.#getNodeEl();
@@ -116,6 +181,10 @@ export class TipViz {
    * @param name - Style property name
    * @param value - Style property value (optional)
    * @returns The D3Tip instance or the style value
+   * @example
+   * ```typescript
+   * tooltip.style("background-color", "blue");
+   * ```
    */
   public style(name: string, value?: string): this | string | null {
     const nodel = this.#getNodeEl();
@@ -128,6 +197,11 @@ export class TipViz {
    * Sets the direction callback for the tooltip.
    * @param fn - Function returning the direction string
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.setDirection((target) => {
+   *  return "n"; // or any other direction logic
+   * });
    */
   public setDirection(fn: DirectionFn): this {
     this.direction = fn;
@@ -138,6 +212,12 @@ export class TipViz {
    * Sets the offset callback for the tooltip.
    * @param fn - Function returning the [x, y] offset
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.setOffset((target) => {
+   *  return [0, 10]; // or any other offset logic
+   * });
+   * ```
    */
   public setOffset(fn: OffsetCallback): this {
     this.offset = fn;
@@ -148,6 +228,11 @@ export class TipViz {
    * Sets the HTML content callback for the tooltip.
    * @param fn - Function returning the HTML string
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.setHtml((data, event) => {
+   *  return `<div>${data}</div>`;
+   * });
    */
   public setHtml(fn: HtmlCallback): this {
     this.html = fn;
@@ -158,6 +243,10 @@ export class TipViz {
    * Sets the root element to which the tooltip node will be appended.
    * @param el - The root HTML element
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.setRootElement(document.getElementById("tooltip-container"));
+   * ```
    */
   public setRootElement(el: HTMLElement): this {
     this.rootElement = el;
@@ -167,6 +256,10 @@ export class TipViz {
   /**
    * Destroys the tooltip node and removes it from the DOM.
    * @returns The D3Tip instance
+   * @example
+   * ```typescript
+   * tooltip.destroy();
+   * ```
    */
   public destroy(): this {
     if (this.node) {
@@ -285,7 +378,6 @@ export class TipViz {
       (enter) =>
         enter
           .append("div")
-          .attr("class", "d3-tooltip")
           .style("position", "absolute")
           .style("top", "0px")
           .style("opacity", "0")

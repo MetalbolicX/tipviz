@@ -46,6 +46,19 @@ Shows the tooltip with the given data and event context. The last argument shoul
 
 ---
 
+
+### styles
+
+```ts
+styles(css: string): this
+```
+
+Sets custom CSS styles for the tooltip HTML content. The styles will be scoped to the direct children of the tooltip node.
+
+- **css**: CSS string to apply to the tooltip content.
+
+---
+
 ### hide
 
 ```ts

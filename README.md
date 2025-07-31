@@ -26,7 +26,40 @@ npm i tipviz
 
 ## 🙌 Hello World Example
 
-Hello
+```ts
+import { select } from "d3";
+import { TipViz } from "tipviz";
+
+// Create SVG
+const svg = select("body")
+  .append("svg")
+  .attr("width", 400)
+  .attr("height", 200);
+
+// Create SVG
+const svg = select("body")
+  .append("svg")
+  .attr("width", 400)
+  .attr("height", 200);
+
+// Draw a circle
+svg.append("circle")
+  .attr("cx", 200)
+  .attr("cy", 100)
+  .attr("r", 40)
+  .attr("fill", "steelblue");
+
+// Initialize tooltip
+const tooltip = new TipViz();
+tooltip.attachTo(svg);
+
+// Show/hide tooltip on events
+svg.selectAll("circle")
+  .on("mouseover", function (event, d) {
+    tooltip.show("Hello World", this);
+  })
+  .on("mouseout", () => tooltip.hide());
+```
 
 ## 📚 Documentation
 

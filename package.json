@@ -1,6 +1,6 @@
 {
   "name": "tipviz",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Insights, on hover with a D3.js tooltip.",
   "type": "module",
   "main": "dist/index.js",
@@ -39,7 +39,9 @@
   "bugs": {
     "url": "https://github.com/MetalbolicX/tipviz/issues"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

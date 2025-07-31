@@ -2,4 +2,10 @@
 
 ## What problem tipviz solves?
 
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Asperiores quis id nam labore, ad temporibus corporis tempore praesentium molestias animi fuga rerum nesciunt ex eveniet numquam quibusdam? Sunt, laborum veritatis!
+`tipviz` is a D3.js tooltip helper that simplifies the process of creating and managing tooltips in D3.js visualizations. It provides a straightforward way to display additional information when hovering over elements in a D3.js chart, enhancing user interaction and data exploration.
+
+## Features
+
+- Customizable templating for tooltips.
+- Customizable styles for tooltips.
+- Easy integration with existing D3.js projects.

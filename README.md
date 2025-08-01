@@ -10,14 +10,6 @@
 - Supports HTML content in tooltips.
 - Recomended to use with [D3.js](https://d3js.org/).
 
-## 🚀 Quick Installation
-
-Add the required dependencies to your project:
-
-```sh
-npm i tipviz
-```
-
 ## 📚 Documentation
 
 <div align="center">

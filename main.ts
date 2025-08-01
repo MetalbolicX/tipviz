@@ -141,7 +141,7 @@ function createScatterPlot(
   svg
     .selectAll("circle")
     .on("mouseover", (event, d) => {
-      tooltip.show(d, event.currentTarget);
+      tooltip.show(d as Record<string, { x: number; y: number }>, event.currentTarget);
     })
     .on("mouseout", () => {
       tooltip.hide();

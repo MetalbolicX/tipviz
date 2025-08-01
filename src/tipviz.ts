@@ -77,7 +77,16 @@ class TipVizTooltip extends HTMLElement {
       );
       content = `<style>${scopedCss}</style>` + content;
     }
-    this.#tooltipDiv.innerHTML = content;
+    while (this.#tooltipDiv.firstChild) {
+      this.#tooltipDiv.removeChild(this.#tooltipDiv.firstChild);
+    }
+    const template = document.createElement("template");
+    template.innerHTML = content;
+    const fragment = document.createDocumentFragment();
+    Array.from(template.content.childNodes).forEach((node) => {
+      fragment.appendChild(node);
+    });
+    this.#tooltipDiv.appendChild(fragment);
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
     // Remove all direction classes

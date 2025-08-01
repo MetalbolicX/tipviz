@@ -169,14 +169,12 @@ class TipVizTooltip extends HTMLElement {
     // Remove all direction classes
     this.#directions.forEach((dir) => this.#tooltipDiv.classList.remove(dir));
     // Positioning
-    const offset = this.#offsetCallback(data, target);
+    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(data, target);
     const dir = this.#directionCallback(data, target) as Direction;
-    const coords = this.#getCoordinates(dir, target);
+    const coordinates = this.#getCoordinates(dir, target);
     this.#tooltipDiv.classList.add(dir);
-    this.#tooltipDiv.style.top = `${coords.top + offset[0] + window.scrollY}px`;
-    this.#tooltipDiv.style.left = `${
-      coords.left + offset[1] + window.scrollX
-    }px`;
+    this.#tooltipDiv.style.top = `${coordinates.top + offsetX + window.scrollY}px`;
+    this.#tooltipDiv.style.left = `${coordinates.left + offsetY + window.scrollX}px`;
 
     // Dispatch show event
     this.dispatchEvent(new CustomEvent("show", {
@@ -184,7 +182,7 @@ class TipVizTooltip extends HTMLElement {
         target,
         data,
         direction: dir,
-        position: coords
+        position: coordinates
       },
       bubbles: true,
       composed: true

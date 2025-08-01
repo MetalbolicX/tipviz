@@ -140,8 +140,9 @@ class TipVizTooltip extends HTMLElement {
   public show(data: Record<string, unknown>, target: Element) {
     if (!target) return;
     let content = this.#htmlCallback(data, target);
+    let scopedCss = "";
     if (this.#stylesText) {
-      const scopedCss = this.#stylesText.replace(
+      scopedCss = this.#stylesText.replace(
         /(^|\})\s*([^\{\}]+)\s*\{/g,
         (m, brace, selector) => {
           if (selector.trim().startsWith("@")) return m;
@@ -157,18 +158,13 @@ class TipVizTooltip extends HTMLElement {
     while (this.#tooltipDiv.firstChild) {
       this.#tooltipDiv.removeChild(this.#tooltipDiv.firstChild);
     }
-    const template = document.createElement("template");
-    template.innerHTML = content;
-    const fragment = document.createDocumentFragment();
-    Array.from(template.content.childNodes).forEach((node) => {
-      fragment.appendChild(node);
-    });
+    const range = document.createRange();
+    range.selectNodeContents(this.#tooltipDiv);
+    const fragment = range.createContextualFragment(content);
     this.#tooltipDiv.appendChild(fragment);
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
-    // Remove all direction classes
     this.#directions.forEach((dir) => this.#tooltipDiv.classList.remove(dir));
-    // Positioning
     const [offsetX = 0, offsetY = 0] = this.#offsetCallback(data, target);
     const dir = this.#directionCallback(data, target) as Direction;
     const coordinates = this.#getCoordinates(dir, target);
@@ -176,7 +172,6 @@ class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.style.top = `${coordinates.top + offsetX + window.scrollY}px`;
     this.#tooltipDiv.style.left = `${coordinates.left + offsetY + window.scrollX}px`;
 
-    // Dispatch show event
     this.dispatchEvent(new CustomEvent("show", {
       detail: {
         target,

@@ -1,155 +1,173 @@
 # API Reference
 
-This page documents the public API and types of the `tipviz` module, which you can use with the tooltip.
+This page documents the public API and types of the `tipviz` module, which provides a customizable tooltip as a Web Component.
 
 ---
 
-## Object
+## Web Component
 
-### TipViz
+### TipVizTooltip
 
-A tooltip utility for D3.js SVG visualizations (TypeScript, d3 v7).
+A customizable tooltip utility built as a Web Component, compatible with any JavaScript project.
 
-#### Constructor
+#### Usage
 
-```ts
-new TipViz()
+```html
+<!-- In HTML -->
+<tip-viz-tooltip id="tooltip" transition-duration="300"></tip-viz-tooltip>
 ```
 
-Creates a new tooltip instance.
+```ts
+// In JavaScript/TypeScript
+import { TipVizTooltip } from 'tipviz';
+
+// Get reference to element
+const tooltip = document.getElementById('tooltip');
+
+// Configure tooltip
+tooltip.setHtml(data => `<div>${data.title}</div>`);
+```
+
+#### Attributes
+
+| Attribute | Type | Description |
+| --- | --- | --- |
+| `transition-duration` | number | Sets the fade transition duration in milliseconds |
 
 ---
 
 ## Methods
 
-### attachTo
+### setHtml
 
 ```ts
-attachTo(vis: Selection<SVGSVGElement, unknown, null, undefined>): void
+setHtml(fn: HtmlCallback): void
 ```
 
-Attaches the tooltip to a D3 SVG selection. Initializes the SVG point for coordinate calculations.
+Sets the HTML content for the tooltip.
 
-- **vis**: D3 selection of the SVG element.
+- **fn**: A function that takes data and returns HTML content for the tooltip.
+
+```ts
+tooltip.setHtml((point) => `<div>${point.x}, ${point.y}</div>`);
+```
 
 ---
 
-### show
+### setStyles
 
 ```ts
-show(...args: any[]): this
+setStyles(css: string): void
 ```
 
-Shows the tooltip with the given data and event context. The last argument should be the SVG element to anchor the tooltip.
-
-- **args**: Data, event, and the SVG element (last argument).
-
----
-
-
-### styles
-
-```ts
-styles(css: string): this
-```
-
-Sets custom CSS styles for the tooltip HTML content. The styles will be scoped to the direct children of the tooltip node.
+Sets the CSS styles for the tooltip. The styles will be scoped to the tooltip's shadow DOM.
 
 - **css**: CSS string to apply to the tooltip content.
 
----
-
-### hide
-
 ```ts
-hide(): this
+tooltip.setStyles(`
+  .tooltip-content {
+    background: black;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+  }
+`);
 ```
-
-Hides the tooltip.
-
----
-
-### attr
-
-```ts
-attr(name: string, value?: string): this | string | null
-```
-
-Gets or sets an attribute on the tooltip node.
-
-- **name**: Attribute name.
-- **value**: Attribute value (optional).
-
----
-
-### style
-
-```ts
-style(name: string, value?: string): this | string | null
-```
-
-Gets or sets a style property on the tooltip node.
-
-- **name**: Style property name.
-- **value**: Style property value (optional).
 
 ---
 
 ### setDirection
 
 ```ts
-setDirection(fn: DirectionFn): this
+setDirection(fn: DirectionFn): void
 ```
 
 Sets the direction callback for the tooltip.
 
 - **fn**: Function returning the direction string.
 
+```ts
+tooltip.setDirection((target) => {
+  return target.getBoundingClientRect().top < window.innerHeight / 2 ? "n" : "s";
+});
+```
+
 ---
 
 ### setOffset
 
 ```ts
-setOffset(fn: OffsetCallback): this
+setOffset(fn: OffsetCallback): void
 ```
 
 Sets the offset callback for the tooltip.
 
-- **fn**: Function returning the `[x, y]` offset.
+- **fn**: Function returning the `[top, left]` offset.
+
+```ts
+tooltip.setOffset((target) => {
+  return [10, 20]; // 10px top, 20px left
+});
+```
 
 ---
 
-### setHtml
+### show
 
 ```ts
-setHtml(fn: HtmlCallback): this
+show(data: Record<string, unknown>, target: Element): void
 ```
 
-Sets the HTML content callback for the tooltip.
+Shows the tooltip at the specified target element with the provided data.
 
-- **fn**: Function returning the HTML string.
+- **data**: The data to display in the tooltip.
+- **target**: The target element to position the tooltip relative to.
+
+```ts
+tooltip.show({ x: 100, y: 200 }, document.getElementById("myElement"));
+```
 
 ---
 
-### setRootElement
+### hide
 
 ```ts
-setRootElement(el: HTMLElement): this
+hide(): void
 ```
 
-Sets the root element to which the tooltip node will be appended.
+Hides the tooltip.
 
-- **el**: The root HTML element.
+```ts
+tooltip.hide();
+```
 
 ---
 
-### destroy
+## Events
+
+The component fires the following custom events:
+
+### showEvent
+
+Fired when the tooltip is shown.
 
 ```ts
-destroy(): this
+tooltip.addEventListener('show', (event) => {
+  const { target, data, direction, position } = event.detail;
+  console.log('Tooltip shown', event.detail);
+});
 ```
 
-Destroys the tooltip node and removes it from the DOM.
+### hideEvent
+
+Fired when the tooltip is hidden.
+
+```ts
+tooltip.addEventListener('hide', () => {
+  console.log('Tooltip hidden');
+});
+```
 
 ---
 
@@ -161,6 +179,17 @@ Destroys the tooltip node and removes it from the DOM.
 type Direction = "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se"
 ```
 
+Represents the position of the tooltip relative to the target element:
+
+- `n`: North (above)
+- `s`: South (below)
+- `e`: East (right)
+- `w`: West (left)
+- `nw`: North-west (above and to the left)
+- `ne`: North-east (above and to the right)
+- `sw`: South-west (below and to the left)
+- `se`: South-east (below and to the right)
+
 ---
 
 ### Offset
@@ -169,13 +198,17 @@ type Direction = "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se"
 type Offset = [number, number]
 ```
 
+An array representing [top, left] offset in pixels.
+
 ---
 
 ### DirectionCallback
 
 ```ts
-type DirectionCallback = (target: SVGGraphicsElement) => { top: number; left: number }
+type DirectionCallback = (target: Element) => { top: number; left: number }
 ```
+
+A function that calculates position coordinates based on a target element.
 
 ---
 
@@ -185,6 +218,8 @@ type DirectionCallback = (target: SVGGraphicsElement) => { top: number; left: nu
 type HtmlCallback = (...args: any[]) => string
 ```
 
+A function that generates HTML content for the tooltip.
+
 ---
 
 ### OffsetCallback
@@ -193,6 +228,8 @@ type HtmlCallback = (...args: any[]) => string
 type OffsetCallback = (...args: any[]) => Offset
 ```
 
+A function that returns the offset of the tooltip.
+
 ---
 
 ### DirectionFn
@@ -200,3 +237,5 @@ type OffsetCallback = (...args: any[]) => Offset
 ```ts
 type DirectionFn = (...args: any[]) => Direction
 ```
+
+A function that determines the direction of the tooltip.

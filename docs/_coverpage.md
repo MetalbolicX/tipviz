@@ -1,8 +1,8 @@
 ![logo](_media/tipviz-logo.svg)
 
-> Discover insights on hover with a D3.js tooltip.
+> Discover insights on hover with a tooltip web component.
 
-![D3.js](https://img.shields.io/badge/D3.js-%3E%3D7.9.0-blue)
+![Web Components](https://img.shields.io/badge/Web%20Components-%3E%3D1.0.0-blue)
 
 [Getting Started](/getting-started)
 [API Reference](/api-reference)

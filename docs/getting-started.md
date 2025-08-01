@@ -65,31 +65,31 @@ To install the `tipviz` web component using any JavaScript package manager, you 
 #### **npm**
 
 ```sh
-npm i d3 tipviz
+npm i tipviz
 ```
 
 #### **pnpm**
 
 ```sh
-pnpm add d3 tipviz
+pnpm add tipviz
 ```
 
 #### **yarn**
 
 ```sh
-yarn add d3 tipviz
+yarn add tipviz
 ```
 
 #### **bun**
 
 ```sh
-bun add d3 tipviz
+bun add tipviz
 ```
 
 #### **deno**
 
 ```sh
-deno add --npm d3 tipviz
+deno add --npm tipviz
 ```
 
 <!-- tabs:end -->

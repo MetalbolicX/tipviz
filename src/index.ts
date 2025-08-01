@@ -1,19 +1,13 @@
-import {
-  TipViz,
-  type Direction,
-  type Offset,
-  type DirectionCallback,
-  type HtmlCallback,
-  type OffsetCallback,
-  type DirectionFn,
-} from "./tooltip";
+// Import and re-export web component
+import { TipVizTooltip } from "./tipviz";
+export { TipVizTooltip };
 
-export {
-  TipViz,
-  type Direction,
-  type Offset,
-  type DirectionCallback,
-  type HtmlCallback,
-  type OffsetCallback,
-  type DirectionFn,
-};
+// Re-export types
+export type {
+  Direction,
+  Offset,
+  DirectionCallback,
+  HtmlCallback,
+  OffsetCallback,
+  DirectionFn
+} from "./tipviz";

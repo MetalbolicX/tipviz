@@ -98,46 +98,6 @@ function createScatterPlot(
     `.trim()
   );
 
-  // const tooltip = new TipViz().setHtml(
-  //   (point) =>
-  //     /*html*/`
-  //     <ul class="tooltip-content">
-  //       <li><strong>X:</strong> ${point.x}</li>
-  //       <li><strong>Y:</strong> ${point.y}</li>
-  //     </ul>`.trim()
-  // ).styles(/*css*/`
-  //   .tooltip-content {
-  //     background: salmon;
-  //     color: #333;
-  //     border-radius: 4px;
-  //     padding: 8px 12px;
-  //     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  //     font-size: 14px;
-  //   }
-  //   .tooltip-content strong {
-  //     display: block;
-  //     margin-bottom: 4px;
-  //     font-weight: bold;
-  //   }
-  //   .tooltip-content li {
-  //     margin: 0;
-  //     padding: 0;
-  //     list-style: none;
-  //   }
-  // `.trim());
-
-  // // Attach to your SVG if needed
-  // tooltip.attachTo(svg);
-
-  // svg
-  //   .selectAll("circle")
-  //   .on("mouseover", (event, d) => {
-  //     tooltip.show(d, event.currentTarget);
-  //   })
-  //   .on("mouseout", () => {
-  //     tooltip.hide();
-  //   });
-
   svg
     .selectAll("circle")
     .on("mouseover", (event, d) => {

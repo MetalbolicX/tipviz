@@ -140,21 +140,31 @@ class TipVizTooltip extends HTMLElement {
   public show(data: Record<string, unknown>, target: Element) {
     if (!target) return;
     let content = this.#htmlCallback(data, target);
-    let scopedCss = "";
+
+    // Remove old style element if present
+    const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
+    if (oldStyle) oldStyle.remove();
+
+    // Use CSSStyleSheet for scoped styles
     if (this.#stylesText) {
-      scopedCss = this.#stylesText.replace(
-        /(^|\})\s*([^\{\}]+)\s*\{/g,
-        (m, brace, selector) => {
-          if (selector.trim().startsWith("@")) return m;
-          const scoped = selector
-            .split(",")
-            .map((s) => `.tipviz-tooltip ` + s.trim())
-            .join(", ");
-          return `${brace} ${scoped} {`;
-        }
-      );
-      content = `<style>${scopedCss}</style>` + content;
+      const sheet = new CSSStyleSheet();
+      try {
+        sheet.replaceSync(this.#stylesText);
+        (this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets = [
+          ...(this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] }).adoptedStyleSheets.filter(
+            s => !(s as any).ownerNode || !(s as any).ownerNode.hasAttribute?.("data-tipviz")
+          ),
+          sheet
+        ];
+      } catch (error) {
+        // Fallback: inject as <style> if CSSStyleSheet fails
+        const style = document.createElement("style");
+        style.setAttribute("data-tipviz", "");
+        style.textContent = this.#stylesText;
+        this.#shadow.appendChild(style);
+      }
     }
+
     while (this.#tooltipDiv.firstChild) {
       this.#tooltipDiv.removeChild(this.#tooltipDiv.firstChild);
     }

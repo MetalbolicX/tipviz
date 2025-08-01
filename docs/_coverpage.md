@@ -1,8 +1,6 @@
 ![logo](_media/tipviz-logo.svg)
 
-> Discover insights on hover with a tooltip web component.
-
-![Web Components](https://img.shields.io/badge/Web%20Components-%3E%3D1.0.0-blue)
+> Discover insights on hover with a tooltip web component. Supports custom HTML, d3.js, and more.
 
 [Getting Started](/getting-started)
 [API Reference](/api-reference)

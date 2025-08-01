@@ -6,57 +6,72 @@ This page demonstrates how to use the `TipViz` tooltip utility in different scen
 
 ## Example 1: Basic Tooltip
 
-Attach a tooltip to an SVG and show `Hello World` content on mouse events.
+
+Attach a tooltip to an SVG and show `Hello World` content on mouse events using the TipVizTooltip Web Component.
+
+```html
+<!-- In your HTML -->
+<svg id="chart" width="400" height="200"></svg>
+<tip-viz-tooltip id="tooltip" transition-duration="200"></tip-viz-tooltip>
+```
 
 ```ts
-import { select } from "d3";
-import { TipViz } from "tipviz";
+// In your main.ts or script
+import { TipVizTooltip } from "tipviz";
 
-// Create SVG
-const svg = select("body")
-  .append("svg")
-  .attr("width", 400)
-  .attr("height", 200);
-
-// Create SVG
-const svg = select("body")
-  .append("svg")
-  .attr("width", 400)
-  .attr("height", 200);
+const svg = document.getElementById("chart") as SVGSVGElement;
+const tooltip = document.getElementById("tooltip") as TipVizTooltip;
 
 // Draw a circle
-svg.append("circle")
-  .attr("cx", 200)
-  .attr("cy", 100)
-  .attr("r", 40)
-  .attr("fill", "steelblue");
+const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+circle.setAttribute("cx", "200");
+circle.setAttribute("cy", "100");
+circle.setAttribute("r", "40");
+circle.setAttribute("fill", "steelblue");
+svg.appendChild(circle);
 
-// Initialize tooltip
-const tooltip = new TipViz();
-tooltip.attachTo(svg);
+// Set tooltip content
+tooltip.setHtml(() => `<div class='tooltip-content'>Hello World</div>`);
+tooltip.setStyles(`
+  .tooltip-content {
+    background: #fff;
+    color: #333;
+    border-radius: 4px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-size: 14px;
+  }
+`);
 
 // Show/hide tooltip on events
-svg.selectAll("circle")
-  .on("mouseover", function (event, d) {
-    tooltip.show("Hello World", this);
-  })
-  .on("mouseout", () => tooltip.hide());
+circle.addEventListener("mouseenter", (event) => {
+  tooltip.show({}, circle);
+});
+circle.addEventListener("mouseleave", () => {
+  tooltip.hide();
+});
 ```
 
 ---
 
 ## Example 2: Custom HTML and Offset
 
-Customize the tooltip content and position using `setHtml` and `setOffset`.
+
+Customize the tooltip content and position using `setHtml` and `setOffset` with d3.js for SVG/data, and the TipVizTooltip Web Component for the tooltip logic.
+
+```html
+<!-- In your HTML -->
+<svg id="chart2" width="400" height="200"></svg>
+<tip-viz-tooltip id="tooltip2" transition-duration="200"></tip-viz-tooltip>
+```
 
 ```ts
+// In your main.ts or script
 import { select } from "d3";
-import { TipViz } from "tipviz";
+import { TipVizTooltip } from "tipviz";
 
-const svg = select("body")
-  .append("svg")
-  .attr("width", 400)
-  .attr("height", 200);
+const svg = select("#chart2");
+const tooltip = document.getElementById("tooltip2") as TipVizTooltip;
 
 const data = [
   { x: 80, y: 80, value: 10 },
@@ -70,98 +85,15 @@ svg.selectAll("circle")
   .attr("cx", d => d.x)
   .attr("cy", d => d.y)
   .attr("r", 25)
-  .attr("fill", "orange");
-
-const tooltip = new TipViz()
-  .setHtml(d => `<strong>Value:</strong> ${d.value}`)
-  .setOffset(() => [10, 10]);
-
-tooltip.attachTo(svg);
-
-svg.selectAll("circle")
-  .on("mouseenter", function (event, d) {
+  .attr("fill", "orange")
+  .on("mouseenter", function(event, d) {
+    tooltip.setHtml(() => `<strong>Value:</strong> ${d.value}`);
+    tooltip.setOffset(() => [10, 10]);
     tooltip.show(d, this);
   })
-  .on("mouseleave", () => tooltip.hide());
-```
-
----
-
-## Example 3: Dynamic Direction and Styling
-
-Set the tooltip direction dynamically and style the tooltip.
-
-```ts
-import { select } from "d3";
-import { TipViz } from "tipviz";
-
-const svg = select("body")
-  .append("svg")
-  .attr("width", 400)
-  .attr("height", 200);
-
-const data = [
-  { x: 60, y: 60, label: "NW", dir: "nw" },
-  { x: 340, y: 60, label: "NE", dir: "ne" },
-  { x: 60, y: 160, label: "SW", dir: "sw" },
-  { x: 340, y: 160, label: "SE", dir: "se" }
-];
-
-svg.selectAll("rect")
-  .data(data)
-  .join("rect")
-  .attr("x", d => d.x - 20)
-  .attr("y", d => d.y - 20)
-  .attr("width", 40)
-  .attr("height", 40)
-  .attr("fill", "teal");
-
-const tooltip = new TipViz()
-  .setHtml(d => `Label: ${d.label}`)
-  .setDirection(d => d.dir)
-  .style("background", "#222")
-  .style("color", "#fff")
-  .style("padding", "8px")
-  .style("border-radius", "4px");
-
-tooltip.attachTo(svg);
-
-svg.selectAll("rect")
-  .on("mousemove", function (event, d) {
-    tooltip.show(d, this);
-  })
-  .on("mouseleave", () => tooltip.hide());
-```
-
----
-
-## Example 4: Tooltip with Custom Root Element
-
-```ts
-import { select } from "d3";
-import { TipViz } from "tipviz";
-
-const svg = select("body")
-  .append("svg")
-  .attr("width", 400)
-  .attr("height", 200);
-
-const tooltipRoot = select("body")
-  .append("div")
-  .attr("class", "tooltip-root");
-
-const tooltip = new TipViz()
-  .setHtml(d => `Value: ${d.value}`)
-  .setOffset(() => [10, 10])
-  .setRootElement(tooltipRoot.node());
-
-tooltip.attachTo(svg);
-
-svg.selectAll("circle")
-  .on("mouseenter", function (event, d) {
-    tooltip.show(d, this);
-  })
-  .on("mouseleave", () => tooltip.hide());
+  .on("mouseleave", function() {
+    tooltip.hide();
+  });
 ```
 
 ---

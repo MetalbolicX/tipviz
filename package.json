@@ -3,13 +3,13 @@
   "version": "2.0.1",
   "description": "Framework-agnostic a tooltip Web Components for modern web applications. Focused on data visualization.",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "homepage": "https://metalbolicx.github.io/tipviz/",
   "exports": {
     "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     },
     "require": {
       "types": "./dist/index.d.cts",
@@ -34,7 +34,7 @@
     "name": "José Martínez Santana"
   },
   "repository": {
-    "type": "github",
+    "type": "git",
     "url": "https://github.com/MetalbolicX/tipviz.git"
   },
   "bugs": {

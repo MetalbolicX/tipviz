@@ -74,8 +74,7 @@ const createScatterPlot = (
   svg
     .selectAll<SVGCircleElement, ScatterPlotPoint>("circle")
     .data(data)
-    .enter()
-    .append("circle")
+    .join("circle")
     .attr("cx", (d) => xScale(d.x))
     .attr("cy", (d) => yScale(d.y))
     .attr("r", POINT_RADIUS)

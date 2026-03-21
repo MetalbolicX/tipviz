@@ -1,10 +1,15 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: "./src/index.mts",
+  format: ["cjs", "es", "umd"],
   platform: "browser",
-  format: ["esm", "cjs"],
-  dts: true,
   minify: true,
-  fixedExtension: true
+  dts: true,
+  tsconfig: true,
+  outDir: "./dist",
+  fixedExtension: true,
+  outputOptions: {
+    name: "TipVizTooltip",
+  },
 });

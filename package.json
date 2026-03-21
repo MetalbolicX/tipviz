@@ -3,8 +3,8 @@
   "version": "2.0.2",
   "description": "Framework-agnostic a tooltip Web Components for modern web applications. Focused on data visualization.",
   "type": "module",
-  "main": "dist/index.mjs",
-  "types": "dist/index.d.mts",
+  "main": "./dist/index.umd.js",
+  "types": "./dist/index.d.mts",
   "homepage": "https://metalbolicx.github.io/tipviz/",
   "exports": {
     "import": {
@@ -14,6 +14,10 @@
     "require": {
       "types": "./dist/index.d.cts",
       "default": "./dist/index.cjs"
+    },
+    "imports": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     }
   },
   "keywords": [
@@ -28,7 +32,8 @@
     "docs": "docsify serve docs",
     "start": "echo \"Hello world\"",
     "build": "tsdown",
-    "dev": "vite"
+    "dev": "vite",
+    "tsdown:build": "tsdown"
   },
   "author": {
     "name": "José Martínez Santana"
@@ -53,5 +58,6 @@
     "tsdown": "^0.13.0",
     "typescript": "^5.9.2",
     "vite": "^7.0.6"
-  }
+  },
+  "module": "./dist/index.mjs"
 }

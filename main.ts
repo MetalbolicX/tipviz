@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import "./src/tipviz";
+import "./dist/index.mjs";
 
 const SVG_SELECTOR = "#chart";
 const SVG_WIDTH = 600;
@@ -24,12 +24,34 @@ const scatterPlotData: ScatterPlotPoint[] = [
   { x: 21, y: 123 },
 ];
 
-function createScatterPlot(
+/**
+ * Creates an interactive scatter plot visualization using D3.js with tooltips.
+ * @param data - Array of data points to be plotted, each containing x and y coordinates
+ * @param svgSelector - CSS selector string for the SVG element where the plot will be rendered
+ * @param width - Width of the SVG canvas in pixels
+ * @param height - Height of the SVG canvas in pixels
+ * @throws {Error} If the SVG element cannot be found at the specified selector
+ * @throws {Error} If the tooltip element (tip-viz-tooltip#tooltip) cannot be found in the document
+ * @remarks
+ * - Scales are automatically calculated based on the data domain with padding for point radius
+ * - Circles are rendered with a fixed radius defined by POINT_RADIUS constant
+ * - Hover interactions display formatted tooltips showing x and y coordinates
+ * - Tooltip styling includes a semi-transparent background with shadow effect
+ * @example
+ * ```typescript
+ * const points: ScatterPlotPoint[] = [
+ *   { x: 10, y: 20 },
+ *   { x: 30, y: 40 }
+ * ];
+ * createScatterPlot(points, 'svg#chart', 800, 600);
+ * ```
+ */
+const createScatterPlot = (
   data: ScatterPlotPoint[],
   svgSelector: string,
   width: number,
   height: number
-): void {
+): void => {
   const svg = d3
     .select<SVGSVGElement, unknown>(svgSelector)
     .attr("width", width)
@@ -67,10 +89,10 @@ function createScatterPlot(
   }
 
   tooltip.setHtml(
-    (point) => /*html*/ `
+    ({ x, y }: ScatterPlotPoint) => /*html*/ `
       <ul class="tooltip-content">
-        <li><strong>X:</strong> ${point.x}</li>
-        <li><strong>Y:</strong> ${point.y}</li>
+        <li><strong>X:</strong> ${x}</li>
+        <li><strong>Y:</strong> ${y}</li>
       </ul>`
   );
   tooltip.setStyles(/*css*/ `
@@ -83,17 +105,13 @@ function createScatterPlot(
         padding: 8px 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         font-size: 14px;
-      }
-      .tooltip-content strong {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: bold;
-      }
-      .tooltip-content li {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: inline-block;
+
+        li {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: inline-block;
+        }
       }
     `.trim()
   );

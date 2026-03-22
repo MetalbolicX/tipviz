@@ -1,5 +1,5 @@
 ---
-name: 'SE: Tech Writer'
+name: 'Tech Writer'
 description: 'Technical writing specialist for creating developer documentation, technical blogs, tutorials, and educational content'
 model: 'GPT-5 mini'
 tools: ['search/codebase', 'edit/editFiles', 'search', 'web/fetch']

@@ -7,10 +7,6 @@
   "types": "./dist/index.d.mts",
   "homepage": "https://metalbolicx.github.io/tipviz/",
   "exports": {
-    "import": {
-      "types": "./dist/index.d.mts",
-      "default": "./dist/index.mjs"
-    },
     "require": {
       "types": "./dist/index.d.cts",
       "default": "./dist/index.cjs"
@@ -30,7 +26,6 @@
   ],
   "scripts": {
     "docs": "docsify serve docs",
-    "start": "echo \"Hello world\"",
     "build": "tsdown",
     "dev": "vite",
     "tsdown:build": "tsdown"

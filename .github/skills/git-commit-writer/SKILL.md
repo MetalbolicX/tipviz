@@ -18,43 +18,44 @@ type(scope): short description
 [optional footer]
 ```
 
-Allowed types: feat, fix, docs, style, refactor, test, chore, perf, ci, build
+Allowed types: feat, fix, docs, style, refactor, test, chore, perf, ci, build. For further reading: [Conventional Commits Specification](./references/git-conventions.md)
 
-## Instructions
+## Instructions, Execution Pipeline
 
-### Step 1: Get the diff
+### Retrieve Staged State (Auto-Execute)
 
-Execute the following command to get the repository's staged changes:
+Immediately execute this command in the terminal to capture the staged diff:
 
 ```sh
 ./.github/skills/git-commit-writer/scripts/get-git-diff.sh
 ```
 
-Read the output carefully. If the output states "No changes found" or "Not a git repository", halt the process and inform the user.
+- _Halt condition: If the output is "No changes found" or "Not a git repository", terminate the pipeline and notify the user_.
+- Read the output carefully. If the output states "No changes found" or "Not a git repository", halt the process and inform the user.
 
 ### Step 2: Analyze the changes
 
-Review the diff output and determine:
+Parse the output of the script as your raw input. Map the changes to the conventional commit schema:
 
-- **Scope & Impact**: What files changed, and what architectural domain or module do they belong to?
-- **Type**: Does this add functionality (feat), resolve an issue (fix), restructure code without changing behavior (refactor), or update tooling/documentation (chore/docs)?
-- **Core Intent**: What is the single most important change occurring in this diff?
+- **Scope**: Identify the specific architectural domain, module, or component modified. Keep it lowercase and concise.
+- **Type**: Categorize the core intent (e.g., `feat` for new functionality, `refactor` for logic restructuring without behavioral changes, `chore` for tooling).
+- **Intent**: Isolate the single most critical change.
 
 ### Step 3: Write the message
 
-Draft the commit message adhering to these constraints:
+Draft the commit message adhering strictly to these constraints:
 
-- Keep the subject line strictly under 72 characters.
-- Use the imperative mood in the subject line (e.g., "add feature", not "added feature" or "adds feature").
-- Do not end the subject line with a period.
-- Include a body if the why or how of the change requires more context than the subject line allows. Wrap body lines at 72 characters.
-- Use the footer to reference external trackers, issues, or breaking changes (e.g., Closes #123, BREAKING CHANGE: ...).
+- Subject line must be `< 72` characters.
+- Subject line must use the imperative mood (e.g., "add", not "added" or "adds").
+- Subject line must not end with a period.
+- If context (the "why" or "how") is needed, append a body. Wrap body text strictly at 72 characters.
+- Use the footer for breaking changes or issue tracker references (e.g., Closes #123, BREAKING CHANGE: ...).
 
 ### Step 4: Output the Final Command
 
-Construct the final git command using the generated message. **Do not execute this command yourself**. You must output it inside a bash code block so the user can review and run it manually.
+Output the final, execution-ready command inside a `bash` code block. **Do not execute this final git commit command yourself**. Hand it off to the user for final review and execution.
 
-If your message includes a body or footer, format the command using multiple `-m` flags or a multiline string.
+Format multiple lines using sequential `-m` flags to prevent terminal formatting errors.
 
 Example output format:
 
@@ -64,38 +65,9 @@ git commit -m "feat(auth): add OAuth2 login with Google" -m "Implements Google O
 
 ## Quality Check (Internal)
 
-Before outputting, ensure:
+Before generating the final bash block, silently verify:
 
-- [ ] Type is strictly one of the allowed types.
-- [ ] Subject line is under 72 characters and uses imperative mood.
-- [ ] Scope is specific, lowercase, and concise.
-- [ ] The final output is exclusively a git commit command block for the user to run.
-
-## Examples
-
-### Example 1: A new feature added to the authentication module
-
-```text
-feat(auth): add OAuth2 login with Google
-
-Implements Google OAuth2 flow using the existing session management
-system. Users can now sign in with their Google account.
-
-Closes #142
-```
-
-### Example 2: A bug fix in the payment processing API
-
-```text
-fix(api): handle null response from payment provider
-```
-
-### Example 3: Documentation update for the README
-
-```text
-docs(readme): update local setup instructions for Node 22
-```
-
-## References
-
-- [Conventional Commits Specification](./references/git-conventions.md)
+- [ ] Pipeline step 1 was executed automatically via terminal tool.
+- [ ] type is strictly from the allowed list.
+- [ ] Subject line uses imperative mood and is `< 72` chars.
+- [ ] Output contains ONLY the bash block and any necessary fatal error messages. No conversational padding ("Here is your command!").

@@ -35,8 +35,6 @@ Add an SVG element and the tooltip component to your HTML. The SVG will hold you
 
 #### Add JavaScript
 
-Now, add a script to draw a circle and connect the tooltip. You can place this in a `<script>` tag at the end of your HTML file.
-
 ```html
 <script type="module">
   // Get references to the SVG and tooltip elements
@@ -49,8 +47,6 @@ Now, add a script to draw a circle and connect the tooltip. You can place this i
   circle.setAttribute("cy", "100");
   circle.setAttribute("r", "40");
   circle.setAttribute("fill", "steelblue");
-  svg.appendChild(circle);
-
   // Set the tooltip's HTML content and styles
   tooltip.setHtml(() => `<div class='tooltip-content'>Hello World</div>`);
   tooltip.setStyles(`
@@ -99,10 +95,6 @@ Prerequisites: a basic HTML file and a place to save `tooltip.css`.
     <meta charset="utf-8" />
     <title>TipViz demo</title>
   </head>
-  <body>
-    <svg id="chart" width="400" height="200"></svg>
-
-    <!-- tooltip element; the `stylesheet` attribute will load tooltip.css into the shadow root -->
     <tip-viz-tooltip id="tooltip" transition-duration="200" stylesheet="tooltip.css"></tip-viz-tooltip>
 
     <script type="module" src="https://unpkg.com/tipviz/dist/tipviz.min.js"></script>
@@ -112,7 +104,6 @@ Prerequisites: a basic HTML file and a place to save `tooltip.css`.
 ```
 
 2) Create `tooltip.css` (save next to your HTML). This file will be loaded inside the component shadow root and scope only to the tooltip's internals.
-
 ```css
 /* tooltip.css */
 .tipviz-tooltip {

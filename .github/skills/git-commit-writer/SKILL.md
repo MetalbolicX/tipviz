@@ -22,7 +22,7 @@ Allowed types: feat, fix, docs, style, refactor, test, chore, perf, ci, build. F
 
 ## Instructions, Execution Pipeline
 
-### Retrieve Staged State (Auto-Execute)
+### Step 1: Retrieve Staged State (Auto-Execute)
 
 Immediately execute this command in the terminal to capture the staged diff:
 

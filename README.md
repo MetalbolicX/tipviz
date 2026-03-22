@@ -1,6 +1,6 @@
 # tipviz
 
-Framework-agnostic tooltip Web Component for data-visualization UIs.
+> Discover insights on hover with a tooltip web component.
 
 ## Overview
 

@@ -1,110 +1,41 @@
 ---
-applyTo: "**"
-description: General guidelines and best practices for writing code.
+applyTo: '**'
+description: 'Core conventions for clean, secure, and efficient code generation.'
 ---
-# General Guidelines for Writing Code
 
-<general_guidelines>
+# Global Coding Standards
 
-- Do not make assumptions or speculate without clear evidence. Verify or clarify requirements before proceeding.
-- Make changes file by file.
-- Never use apologies or give feedback about understanding in comments or documentation.
-- Do not suggest whitespace changes or summarize the changes made.
-- Prioritize code performance and security in suggestions.
-- Analyze potential error scenarios and implement robust error handling and user-friendly messages.
-- Encourage modular design for maintainability and reusability.
-- Replace hardcoded values with named constants.
+## 1. Operational Constraints
+- **Precision:** Do not speculate. Ask for clarification if requirements are ambiguous.
+- **Atomic Changes:** Modify files one at a time.
+- **Zero Verbosity:** Never apologize, explain "understanding," or summarize changes.
+- **Code Only:** Do not output whitespace-only changes or "before/after" comparisons unless requested.
+- **Safety:** Prioritize performance, security, and robust error handling with user-friendly messages.
+
+## 2. Clean Code & Naming
+- **Booleans:** Prefix with `is`, `has`, `can`, or `should` (e.g., `isUserLoggedIn`, `hasPermission`).
+- **Functions:** Use action verbs (e.g., `fetchData`, `validateForm`).
+- **Clarity:** Use descriptive names over abbreviations, except for standard industry terms (API, URL) or specific library conventions (e.g., `d, i` in D3).
+- **Constants:** Replace hardcoded values with `UPPER_SNAKE_CASE` constants.
 
 <example>
-
-```ts
+// Good: Descriptive, Constant usage, Action-based function
 const TAX_RATE = 0.2;
-
-function calculateTotal(price: number): number {
-  return price + price * TAX_RATE;
+function calculateFinalPrice(basePrice: number): number {
+  return basePrice * (1 + TAX_RATE);
 }
-```
-
 </example>
 
-</general_guidelines>
-
-<clean_code>
-<naming_conventions>
-
-- For boolean data types, use names that simulate a question such as `hasOne`, `isAtLeastOne`, `isValid`, `isEmpty`, etc.
-- Use meaningful names that describe the purpose of the variable, function, or class.
+## 3. Logic & Control Flow
+- **Early Returns:** Avoid deep nesting. Use guard clauses to handle edge cases first.
+- **Modularity:** Design for reusability and single responsibility.
 
 <example>
+// Recommended: Guard clauses reduce nesting
+function processOrder(order: Order): Result {
+  if (!order.isValid) return { error: "Invalid" };
+  if (order.isProcessed) return { error: "Duplicate" };
 
-```ts
-// Bad naming
-const x = true; // Not descriptive
-const a = 5; // Not descriptive
-const fruits = ["apple", "banana"]; // Not descriptive
-
-
-  // Good naming
-const isUserLoggedIn = true;
-const maxRetryAttempts = 5;
-function fetchUserData(userId: string): UserData {
-  // Fetch user data logic
+  return executeProcessing(order);
 }
-const fruitNames = ["apple", "banana"]; // More descriptive
-const userProfile = {
-  name: "John Doe",
-  age: 30,
-  isActive: true
-};
-const fruits = [
-  { name: "apple", color: "red" },
-  { name: "banana", color: "yellow" }
-]; // Context provides more data
-```
-
 </example>
-
-- For functions, use names that simulate an action such as `validateUser`, etc.
-- Avoid using acronyms in names unless they are widely recognized (e.g., `HTML`, `URL`, `API`) or they are part of a convention by a given context.
-
-<example>
-
-```js
-// In d3.js a callback uses d, i, ns to refer to data, index, and elements in an array respectively.
-d3.select("body")
-  .selectAll("p")
-  .data(data)
-  .enter()
-  .append("p")
-  .text((d, i, ns) => `Data: ${d}, Index: ${i}, Node: ${ns}`);
-
-// In display context bg or fg are used for background and foreground
-const display = {
-  bgColor: "white",
-  fgColor: "black",
-};
-```
-
-</example>
-
-</naming_conventions>
-
-- Avoid the use of nested `if` statements and take advantage of early return.
-
-<example>
-
-```ts
-// Recommended
-function processData(data: DataType): ResultType {
-  if (!data) {
-    return null; // Early return for invalid data
-  }
-
-  // Process data here
-  return result;
-}
-```
-
-</example>
-
-</clean_code>

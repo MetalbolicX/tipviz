@@ -37,7 +37,7 @@ Add an SVG element and the tooltip component to your HTML. The SVG will hold you
 
 Now, add a script to draw a circle and connect the tooltip. You can place this in a `<script>` tag at the end of your HTML file.
 
-```javascript
+```html
 <script type="module">
   // Get references to the SVG and tooltip elements
   const svg = document.getElementById("chart");
@@ -83,6 +83,89 @@ What’s Happening? 🤔
 - When you hover over the circle, the tooltip appears. When you move your mouse away, it disappears.
 
 With just a few lines of code and a CDN link, you can add beautiful, interactive tooltips to your SVG graphics using the TipVizTooltip web component! 🥳.
+
+### Beginner step-by-step (CDN + local CSS file)
+
+This short step-by-step is aimed at a junior developer who wants the simplest working setup using the CDN and a local CSS file to style the tooltip.
+
+Prerequisites: a basic HTML file and a place to save `tooltip.css`.
+
+1) Add the CDN script and the tooltip element. Place the script near the end of `body` so DOM elements are available:
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>TipViz demo</title>
+  </head>
+  <body>
+    <svg id="chart" width="400" height="200"></svg>
+
+    <!-- tooltip element; the `stylesheet` attribute will load tooltip.css into the shadow root -->
+    <tip-viz-tooltip id="tooltip" transition-duration="200" stylesheet="tooltip.css"></tip-viz-tooltip>
+
+    <script type="module" src="https://unpkg.com/tipviz/dist/tipviz.min.js"></script>
+    <script type="module" src="./demo.js"></script>
+  </body>
+</html>
+```
+
+2) Create `tooltip.css` (save next to your HTML). This file will be loaded inside the component shadow root and scope only to the tooltip's internals.
+
+```css
+/* tooltip.css */
+.tipviz-tooltip {
+  font-family: system-ui, Arial, sans-serif;
+}
+.tooltip-content {
+  background: #222;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  font-size: 13px;
+}
+```
+
+3) Create `demo.js` (basic interaction). This file draws a circle and uses the tooltip API from [the reference](./api-reference.md) to set content and show/hide on hover.:
+
+```js
+// demo.js
+const svg = document.getElementById('chart');
+const tooltip = document.getElementById('tooltip');
+
+// create a point
+const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+circle.setAttribute('cx', '200');
+circle.setAttribute('cy', '100');
+circle.setAttribute('r', '28');
+circle.setAttribute('fill', 'tomato');
+svg.appendChild(circle);
+
+// supply HTML for the tooltip
+tooltip.setHtml((data) => `
+  <div class="tooltip-content">
+    <strong>${data.title}</strong>
+    <div>${data.value}</div>
+  </div>
+`);
+
+// show/hide using the DOM element as the placement target
+circle.addEventListener('mouseenter', () => tooltip.show({ title: 'Point A', value: 42 }, circle));
+circle.addEventListener('mouseleave', () => tooltip.hide());
+
+// Note: the component will load tooltip.css automatically because of the `stylesheet` attribute
+```
+
+4) Open the HTML file in the browser. Hover over the circle — you should see the styled tooltip appear.
+5) Customization notes (quick reference from the API):
+  - To change how the tooltip decides where to appear, use `tooltip.setDirection(fn)` where `fn` returns one of `n|s|e|w|nw|ne|sw|se`.
+  - To fine-tune position, use `tooltip.setOffset(fn)` returning `[topOffset, leftOffset]` in pixels.
+  - To inject styles programmatically, call `tooltip.setStyles(cssString)` (useful for small overrides).
+  - If you don't see correct positioning when the tooltip moves with page scroll, ensure your `<tip-viz-tooltip>` element is appended to `document.body` (this example keeps it in the page body already).
+
+If you'd like, I can also add a short example that shows `setDirection` logic or how to use `loadStylesheet(url)` dynamically instead of the `stylesheet` attribute.
 
 ### Usage with D3.js, TypeScript and Vite
 

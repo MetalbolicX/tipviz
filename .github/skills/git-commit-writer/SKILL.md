@@ -66,10 +66,10 @@ git commit -m "feat(auth): add OAuth2 login with Google" -m "Implements Google O
 
 Before outputting, ensure:
 
-- [] Type is strictly one of the allowed types.
-- [] Subject line is under 72 characters and uses imperative mood.
-- [] Scope is specific, lowercase, and concise.
-- [] The final output is exclusively a git commit command block for the user to run.
+- [ ] Type is strictly one of the allowed types.
+- [ ] Subject line is under 72 characters and uses imperative mood.
+- [ ] Scope is specific, lowercase, and concise.
+- [ ] The final output is exclusively a git commit command block for the user to run.
 
 ## Examples
 

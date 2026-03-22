@@ -1,5 +1,6 @@
 import * as d3 from "d3";
-import "./dist/index.mjs";
+import "../dist/index.mjs";
+import { TipVizTooltip } from "../dist/index.mjs";
 
 const SVG_SELECTOR = "#chart";
 const SVG_WIDTH = 600;
@@ -126,3 +127,24 @@ const createScatterPlot = (
 }
 
 createScatterPlot(scatterPlotData, SVG_SELECTOR, SVG_WIDTH, SVG_HEIGHT);
+
+const button = document.querySelector<HTMLButtonElement>("button");
+if (!button) {
+  throw new Error("Button element not found in the document.");
+}
+
+button.addEventListener("click", () => {
+  const tooltip = document.querySelector<TipVizTooltip>(
+    "tip-viz-tooltip#button"
+  );
+  if (!tooltip) {
+    throw new Error("Tooltip element not found in the document.");
+  }
+  tooltip.setHtml(() => /*html*/ `
+    <div class="tooltip-content">
+      <p>You clicked the button!</p>
+    </div>
+  `.trim());
+  tooltip.show({}, button);
+});
+

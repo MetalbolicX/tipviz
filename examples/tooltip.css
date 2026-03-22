@@ -1,0 +1,12 @@
+.tooltip-content {
+  font-family: sans-serif;
+  background: #FFCC00;
+  color: #333;
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 14px;
+  max-width: 200px;
+  text-align: center;
+  pointer-events: none;
+}

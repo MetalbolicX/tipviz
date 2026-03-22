@@ -171,106 +171,91 @@ If you'd like, I can also add a short example that shows `setDirection` logic or
 
 In this section, you will learn how to create a simple scatter plot using D3.js, TypeScript, and Vite, and enhance it with interactive tooltips using the `TipVizTooltip` web component.
 
-#### Project Setup with Vite and TypeScript
+#### Project setup (quick)
 
-First, create a new project using Vite, which is a fast build tool for modern web projects. Vite makes it easy to use TypeScript and bundle your code for production. 🛠️
-
-Open your terminal and run:
+Create a Vite + TypeScript project and install the libraries you'll need:
 
 ```sh
-npm create vite@latest my-scatterplot -- --template vanilla-ts
+npx create-vite@latest my-scatterplot --template vanilla-ts
 cd my-scatterplot
 npm install
-```
-
-Install the necessary dependencies:
-
-```sh
 npm install d3 tipviz
 ```
 
-#### Set Up Your HTML with Vite
+Notes:
+- Install `tipviz` from npm when using Vite so the component is bundled with your app.
+- You can also use the CDN build instead (see the earlier CDN examples) but the steps below assume the npm package.
 
-Edit your `index.html` to include an SVG for the chart and the tooltip component:
+#### Add the tooltip element to `index.html`
+
+Put the tooltip element in your page body so it's available to scripts and sits on the same stacking context as your chart. You can pass attributes like `transition-duration` or `stylesheet` here:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Scatter Plot with D3.js and TipVizTooltip</title>
-  </head>
-  <body>
-    <svg id="chart2" width="400" height="200"></svg>
-    <tip-viz-tooltip id="tooltip2" transition-duration="200"></tip-viz-tooltip>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
-</html>
+<svg id="chart2" width="400" height="200"></svg>
+<tip-viz-tooltip id="tooltip2" transition-duration="200"></tip-viz-tooltip>
+<script type="module" src="/src/main.ts"></script>
 ```
 
-#### Write the TypeScript Code
+Why this matters:
+- The `<tip-viz-tooltip>` element must exist in the DOM before you call its methods from your code.
+- Keeping it in the document body avoids many positioning issues — if you encounter odd placement, ensure the element is a child of `document.body`.
 
-Create or edit `src/main.ts` as follows:
+#### main.ts — register the component and use it
+
+Importing the package registers the custom element. Importing the types is optional but useful in TypeScript.
 
 ```ts
 import * as d3 from "d3";
-import "tipviz"; // Register the TipVizTooltip web component
-import { type TipVizTooltip } from "tipviz"; // Use the types from TypesScript
+import "tipviz"; // registers <tip-viz-tooltip>
+import type { TipVizTooltip } from "tipviz"; // provides TS types
 
-// Register the web component (this is done by the import)
 const svg = d3.select("#chart2");
 const tooltip = document.getElementById("tooltip2") as TipVizTooltip;
-tooltip.setHtml(() => `<strong>Value:</strong> ${d.value}`);
-tooltip.setOffset(() => [10, 10]);
 
-// Example data for the scatter plot
+// Provide HTML for the tooltip. The function receives the data you pass to `show()`.
+tooltip.setHtml(({ value }) => `
+  <div class="tooltip-content">
+    <strong>${value}</strong>
+  </div>
+`);
+
+// Small offset so the tooltip doesn't sit directly on the target
+tooltip.setOffset(() => [8, 0]);
+
+// Example data and scales
 const data = [
   { x: 80, y: 80, value: 10 },
   { x: 200, y: 120, value: 20 },
   { x: 320, y: 60, value: 30 }
 ];
 
-// Create scales for positioning
-const xScale = d3.scaleLinear()
-  .domain([0, d3.max(data, d => d.x)!])
-  .range([40, 360]);
+const xScale = d3.scaleLinear().domain([0, d3.max(data, d => d.x)!]).range([40, 360]);
+const yScale = d3.scaleLinear().domain([0, d3.max(data, d => d.y)!]).range([160, 40]);
 
-const yScale = d3.scaleLinear()
-  .domain([0, d3.max(data, d => d.y)!])
-  .range([160, 40]);
-
-// Draw circles for each data point
 svg.selectAll("circle")
   .data(data)
   .join("circle")
   .attr("cx", d => xScale(d.x))
   .attr("cy", d => yScale(d.y))
-  .attr("r", 25)
+  .attr("r", 12)
   .attr("fill", "orange")
-  .on("mouseenter", function(event, d) {
-    tooltip.show(d, this);
+  .on("mouseenter", (event, d) => {
+    // Pass the data object and the DOM element used for placement
+    tooltip.show(d, event.currentTarget as Element);
   })
-  .on("mouseleave", function() {
-    tooltip.hide();
-  });
+  .on("mouseleave", () => tooltip.hide());
 ```
 
-#### Run and Build Your Project
+Helpful tips from the API reference:
+- `import "tipviz"` registers the custom element so `document.getElementById()` returns a usable `TipVizTooltip` instance.
+- Use `tooltip.setHtml(fn)` to supply HTML; `fn` receives the data object you pass to `show()`.
+- Use `tooltip.setOffset(fn)` and `tooltip.setDirection(fn)` to fine-tune placement behavior.
+- If you want scoped CSS inside the component, either set the `stylesheet` attribute on the element or call `tooltip.setStyles(cssString)` / `tooltip.loadStylesheet(url)`.
 
-To start your development server and see the scatter plot in action, run:
+Run the dev server:
 
 ```sh
 npm run dev
 ```
 
-Open your browser to the provided local address. Hover over the orange circles to see the tooltips! 🖱️✨
-
-When you are ready to build for production, use:
-
-```sh
-npm run build
-```
-
-Vite will bundle your code, including the `TipVizTooltip` web component, for deployment.
-
-You have now created an interactive scatter plot using D3.js, TypeScript, and Vite, enhanced with a modern, customizable tooltip using the TipVizTooltip web component.
+Open the local address shown by Vite and hover the points — the tooltip should appear. If the tooltip looks unstyled, check that you either provided styles via the `stylesheet` attribute or called `tooltip.setStyles()` from your code.

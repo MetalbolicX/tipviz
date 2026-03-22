@@ -8,7 +8,7 @@ import {
 
 export class TipVizTooltip extends HTMLElement {
   public static get observedAttributes() {
-    return ["transition-duration"];
+    return ["transition-duration", "stylesheet"];
   }
 
   #htmlCallback: HtmlCallback = () => " ";
@@ -26,6 +26,7 @@ export class TipVizTooltip extends HTMLElement {
     this.#shadow = this.attachShadow({ mode: "open" });
     this.#tooltipDiv = document.createElement("div");
     this.#tooltipDiv.className = "tipviz-tooltip";
+    this.#tooltipDiv.setAttribute("part", "tooltip-box");
 
     // Base styles
     Object.assign(this.#tooltipDiv.style, {
@@ -44,11 +45,18 @@ export class TipVizTooltip extends HTMLElement {
   public connectedCallback() {
     const duration = this.getAttribute("transition-duration");
     if (duration) this.#updateTransitionDuration(duration);
+
+    const stylesheet = this.getAttribute("stylesheet");
+    if (stylesheet) this.loadStylesheet(stylesheet);
   }
 
   public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "transition-duration" && newValue) {
       this.#updateTransitionDuration(newValue);
+    }
+
+    if (name === "stylesheet" && newValue) {
+      this.loadStylesheet(newValue);
     }
   }
 
@@ -66,6 +74,25 @@ export class TipVizTooltip extends HTMLElement {
   #updateTransitionDuration(duration: string) {
     this.#transitionDuration = parseInt(duration, 10);
     this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
+  }
+
+  /**
+   * Load or update a stylesheet link inside the component's shadow root.
+   * @param url - The stylesheet URL to load into the shadow root.
+   * @example
+   * ```typescript
+   * tooltip.loadStylesheet('https://example.com/tooltip-styles.css');
+   * ```
+   */
+  public loadStylesheet(url: string) {
+    let link = this.#shadow.querySelector<HTMLLinkElement>('link[data-tipviz-link]');
+    if (!link) {
+      link = document.createElement("link");
+      link.setAttribute("rel", "stylesheet");
+      link.setAttribute("data-tipviz-link", "");
+      this.#shadow.insertBefore(link, this.#tooltipDiv);
+    }
+    link.href = url;
   }
 
   /**

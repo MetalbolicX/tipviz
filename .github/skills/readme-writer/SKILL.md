@@ -34,48 +34,7 @@ Gather:
 
 ## Step 2: Write the README
 
-Use this structure. Only include sections that are relevant. Do not add empty sections.
-
-```
-# Project Name
-
-One clear sentence describing what this project does and who it is for.
-
-## Features
-- Feature one (be specific)
-- Feature two
-
-## Prerequisites
-List what needs to be installed. Include version requirements if important.
-
-## Installation
-Step-by-step setup. Every command must be copy-pasteable.
-
-```bash
-git clone https://github.com/username/project
-cd project
-npm install
-```
-
-## Configuration
-If the project needs environment variables, show an example:
-
-```bash
-cp .env.example .env
-```
-
-Then explain each variable the user needs to set manually.
-
-## Usage
-Show the most common use case first.
-
-```bash
-npm run dev
-```
-
-## License
-[MIT](LICENSE)
-```
+Use similar structures like the [example 1](./references/README-example-1.md) and [example 2](./references/README-example-2.md). Only include sections that are relevant. Do not add empty sections.
 
 ## Step 3: Write the file to disk
 

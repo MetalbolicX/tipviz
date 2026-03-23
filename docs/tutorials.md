@@ -4,7 +4,7 @@ This page demonstrates how to use the `TipViz` tooltip utility in different scen
 
 ## Usage
 
-### Basic Tooltip
+### Basic Usage of the Tooltip
 
 Tooltips are a fantastic way to provide extra information to users when they interact with elements on your webpage. In this tutorial, you'll learn how to easily add a tooltip to an SVG element using the `TipVizTooltip` component, even if you're new to web development. We'll use a CDN for quick setup—no build tools or package managers required! 🚀.
 
@@ -80,30 +80,21 @@ What’s Happening? 🤔
 
 With just a few lines of code and a CDN link, you can add beautiful, interactive tooltips to your SVG graphics using the TipVizTooltip web component! 🥳.
 
-### Beginner step-by-step (CDN + local CSS file)
+#### CSS styles for the tooltip
 
-This short step-by-step is aimed at a junior developer who wants the simplest working setup using the CDN and a local CSS file to style the tooltip.
+There are two ways to style the tooltip:
 
-Prerequisites: a basic HTML file and a place to save `tooltip.css`.
+1. **Using `setStyles(cssString)`**: This method allows you to inject CSS directly from your JavaScript code. The styles will be scoped to the tooltip component, so they won't affect the rest of your page.
+2. **Using the `stylesheet` attribute**: You can create a separate CSS file (e.g., `tooltip.css`) and link it to the tooltip component using the `stylesheet` attribute. This is a cleaner approach for larger stylesheets.
 
-1) Add the CDN script and the tooltip element. Place the script near the end of `body` so DOM elements are available:
+In this example, we'll use the `stylesheet` attribute to keep our styles organized. Here's how you can do it:
 
 ```html
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>TipViz demo</title>
-  </head>
-    <tip-viz-tooltip id="tooltip" transition-duration="200" stylesheet="tooltip.css"></tip-viz-tooltip>
-
-    <script type="module" src="https://unpkg.com/tipviz/dist/tipviz.min.js"></script>
-    <script type="module" src="./demo.js"></script>
-  </body>
-</html>
+<tip-viz-tooltip id="tooltip" transition-duration="200" stylesheet="tooltip.css"></tip-viz-tooltip>
 ```
 
-2) Create `tooltip.css` (save next to your HTML). This file will be loaded inside the component shadow root and scope only to the tooltip's internals.
+Then, create a `tooltip.css` file with the following content:
+
 ```css
 /* tooltip.css */
 .tipviz-tooltip {
@@ -119,48 +110,7 @@ Prerequisites: a basic HTML file and a place to save `tooltip.css`.
 }
 ```
 
-3) Create `demo.js` (basic interaction). This file draws a circle and uses the tooltip API from [the reference](./api-reference.md) to set content and show/hide on hover.:
-
-```js
-// demo.js
-const svg = document.getElementById('chart');
-const tooltip = document.getElementById('tooltip');
-
-// create a point
-const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-circle.setAttribute('cx', '200');
-circle.setAttribute('cy', '100');
-circle.setAttribute('r', '28');
-circle.setAttribute('fill', 'tomato');
-svg.appendChild(circle);
-
-// supply HTML for the tooltip
-tooltip.setHtml((data) => `
-  <div class="tooltip-content">
-    <strong>${data.title}</strong>
-    <div>${data.value}</div>
-  </div>
-`);
-
-// show/hide using the DOM element as the placement target
-circle.addEventListener('mouseenter', () => tooltip.show({ title: 'Point A', value: 42 }, circle));
-circle.addEventListener('mouseleave', () => tooltip.hide());
-
-// Note: the component will load tooltip.css automatically because of the `stylesheet` attribute
-```
-
-4) Open the HTML file in the browser. Hover over the circle — you should see the styled tooltip appear.
-5) Customization notes (quick reference from the API):
-  - To change how the tooltip decides where to appear, use `tooltip.setDirection(fn)` where `fn` returns one of `n|s|e|w|nw|ne|sw|se`.
-  - To fine-tune position, use `tooltip.setOffset(fn)` returning `[topOffset, leftOffset]` in pixels.
-  - To inject styles programmatically, call `tooltip.setStyles(cssString)` (useful for small overrides).
-  - If you don't see correct positioning when the tooltip moves with page scroll, ensure your `<tip-viz-tooltip>` element is appended to `document.body` (this example keeps it in the page body already).
-
-If you'd like, I can also add a short example that shows `setDirection` logic or how to use `loadStylesheet(url)` dynamically instead of the `stylesheet` attribute.
-
-### Usage with D3.js, TypeScript and Vite
-
-In this section, you will learn how to create a simple scatter plot using D3.js, TypeScript, and Vite, and enhance it with interactive tooltips using the `TipVizTooltip` web component.
+### Using TipViz with a Typescript + D3.js (and Vite) Project
 
 #### Project setup (quick)
 
@@ -172,10 +122,6 @@ cd my-scatterplot
 npm install
 npm install d3 tipviz
 ```
-
-Notes:
-- Install `tipviz` from npm when using Vite so the component is bundled with your app.
-- You can also use the CDN build instead (see the earlier CDN examples) but the steps below assume the npm package.
 
 #### Add the tooltip element to `index.html`
 

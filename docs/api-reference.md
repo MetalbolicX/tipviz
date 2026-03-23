@@ -4,23 +4,12 @@ This page documents the public API, attributes, types and usage examples for the
 
 ---
 
-## Web Component
+## TipVizTooltip
 
-### TipVizTooltip
-
-A lightweight, framework-agnostic tooltip implemented as a Web Component. It exposes imperative methods to set content, styling and placement behavior, and it emits `show`/`hide` events when visibility changes.
-
-#### Usage (HTML)
+### HTML Usage
 
 ```html
 <tip-viz-tooltip id="tooltip" transition-duration="300" stylesheet="/tooltip.css"></tip-viz-tooltip>
-```
-
-#### Getting the element (JS)
-
-```js
-const tooltip = document.getElementById('tooltip');
-// tooltip is an instance of the custom element and exposes the methods below
 ```
 
 #### Observed attributes
@@ -28,34 +17,60 @@ const tooltip = document.getElementById('tooltip');
 - `transition-duration` (number): optional; controls the fade duration for show/hide in milliseconds.
 - `stylesheet` (string): optional; URL to a stylesheet that will be added inside the component's shadow root.
 
----
+### Working with the component in JavaScript
 
-## Methods
+When you select the component in JavaScript, you get access to its methods for setting content, styles, and controlling visibility.
 
-- **`loadStylesheet(url: string): void`**
-  - Loads or updates a `<link rel="stylesheet">` inside the component shadow root using the provided `url`.
+```js
+// tooltip is an instance of the custom element and exposes the methods below
+const tooltip = document.getElementById('tooltip');
+```
 
-- **`setHtml(fn: HtmlCallback): void`**
-  - Sets the callback used to render HTML content into the tooltip. When `show` is called the component sets `innerHTML` on the tooltip box using the returned string from this function.
+#### Methods
 
-- **`setDirection(fn: DirectionFn): void`**
-  - Sets the callback that determines the placement `Direction` for a given `data` and `target`.
+- **`loadStylesheet`**: Loads or updates a `<link rel="stylesheet">` inside the component shadow root using the provided `url`.
 
-- **`setOffset(fn: OffsetCallback): void`**
-  - Sets the callback that returns an `Offset` pair applied to the computed coordinates. The offset is interpreted as `[topOffset, leftOffset]` (numbers in pixels). These values are added to the computed `top` and `left` respectively.
+  ```ts
+  loadStylesheet(url: string): void;
+  ```
 
-- **`setStyles(css: string): void`**
-  - Applies scoped CSS to the component. Prefers the modern `CSSStyleSheet` + `adoptedStyleSheets` APIs and falls back to injecting a `<style>` element when unavailable.
+- **`setHtml`**: Sets the callback used to render HTML content into the tooltip. When `show` is called the component sets the html content on the tooltip box using the returned string from this function.
 
-- **`show(data: Record<string, unknown>, target: Element): void`**
-  - Renders content (via `setHtml`), computes placement (via `setDirection` and `setOffset`), positions the tooltip relative to `target`, makes it visible and dispatches a bubbling, composed `show` event with details: `{ target, data, direction, position }`.
+    ```ts
+    setHtml(fn: HtmlCallback): void;
+    ```
 
-- **`hide(): void`**
-  - Hides the tooltip (sets opacity to `0`, disables pointer events) and dispatches a bubbling, composed `hide` event.
+- **`setDirection`**: Sets the callback that determines the placement `Direction` for a given `data` and `target`.
 
----
+  ```ts
+  setDirection(fn: DirectionFn): void;
+  ```
 
-## Events
+- **`setOffset`**: Sets the callback that returns an `Offset` pair applied to the computed coordinates. The offset is interpreted as `[topOffset, leftOffset]` (numbers in pixels). These values are added to the computed `top` and `left` respectively.
+
+  ```ts
+  setOffset(fn: OffsetCallback): void;
+  ```
+
+- **`setStyles`**: Applies scoped CSS to the component.
+
+  ```ts
+  setStyles(cssString: string): void;
+  ```
+
+- **`show`**: Displays the tooltip with the provided `data` and positions it relative to the `target` element.
+
+  ```ts
+  show(data: any, target: Element): void;
+  ```
+
+- **`hide`**: Hides the tooltip and dispatches a bubbling, composed `hide` event.
+
+  ```ts
+  hide(): void;
+  ```
+
+#### Events
 
 - **`show`** — emitted when `show()` completes. `event.detail` contains:
   - `target`: the Element the tooltip was positioned against
@@ -158,5 +173,3 @@ tooltip.show({ title: 'Point A', value: 42 }, document.querySelector('#point-a')
 // later
 tooltip.hide();
 ```
-
----

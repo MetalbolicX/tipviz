@@ -3,6 +3,7 @@
 window.$docsify = {
   name: "tipviz",
   repo: "https://github.com/MetalbolicX/tipviz.git",
+  executeScript: true,
   loadSidebar: true,
   subMaxLevel: 3,
   coverpage: true,

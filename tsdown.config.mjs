@@ -1,3 +1,4 @@
+"use strict";
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
@@ -10,6 +11,6 @@ export default defineConfig({
   outDir: "./dist",
   fixedExtension: true,
   outputOptions: {
-    name: "TipVizTooltip",
+    name: "Tipviz",
   },
 });

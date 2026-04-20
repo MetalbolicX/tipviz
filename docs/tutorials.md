@@ -14,10 +14,10 @@ First, include the `TipVizTooltip` web component in your HTML using a CDN. This 
 
 ```html
 <!-- Add this in your <head> or before your closing </body> tag -->
-<script type="module" src="https://unpkg.com/tipviz/dist/tipviz.min.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/tipviz@2.1.0/dist/index.mjs"></script>
 ```
 
-This line loads the TipVizTooltip component so you can use it anywhere in your HTML 🌐.
+This line loads the TipVizTooltip component and registers the `<tip-viz-tooltip>` custom element so you can use it anywhere in your HTML 🌐.
 
 #### Set Up Your HTML
 

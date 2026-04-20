@@ -14,7 +14,7 @@ This page documents the public API, attributes, types and usage examples for the
 
 #### Observed attributes
 
-- `transition-duration` (number): optional; controls the fade duration for show/hide in milliseconds.
+- `transition-duration` (number): optional; controls the fade duration for show/hide in milliseconds. Defaults to `200ms`.
 - `stylesheet` (string): optional; URL to a stylesheet that will be added inside the component's shadow root.
 
 ### Working with the component in JavaScript
@@ -46,13 +46,13 @@ const tooltip = document.getElementById('tooltip');
   setDirection(fn: DirectionFn): void;
   ```
 
-- **`setOffset`**: Sets the callback that returns an `Offset` pair applied to the computed coordinates. The offset is interpreted as `[topOffset, leftOffset]` (numbers in pixels). These values are added to the computed `top` and `left` respectively.
+- **`setOffset`**: Sets the callback that returns an `Offset` pair applied to the computed coordinates. The offset is interpreted as `[x, y]` — where `x` (horizontal) is added to `left` and `y` (vertical) is added to `top`. Both are in pixels.
 
   ```ts
   setOffset(fn: OffsetCallback): void;
   ```
 
-- **`setStyles`**: Applies scoped CSS to the component.
+- **`setStyles`**: Applies scoped CSS to the component. Internally it uses the `CSSStyleSheet.replaceSync()` API with `adoptedStyleSheets`. If the browser does not support it, it falls back to injecting a `<style>` element inside the shadow root.
 
   ```ts
   setStyles(cssString: string): void;
@@ -69,6 +69,38 @@ const tooltip = document.getElementById('tooltip');
   ```ts
   hide(): void;
   ```
+
+#### External styling with `::part()`
+
+The tooltip's inner `<div>` carries a `part="tooltip-box"` attribute:
+
+```html
+<tip-viz-tooltip id="tooltip"></tip-viz-tooltip>
+```
+
+This lets you style the tooltip from outside the shadow DOM via CSS `::part()`:
+
+```css
+tip-viz-tooltip::part(tooltip-box) {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+}
+```
+
+This approach does **not** require `setStyles()` and works independently of the internal CSS mechanism.
+
+#### Lazy registration with `defineTooltip()`
+
+The package auto-registers `<tip-viz-tooltip>` on import. For lazy/async scenarios, use `defineTooltip()` from the sub-path export:
+
+```ts
+import { defineTooltip } from "tipviz/components/tooltip";
+
+// Registers only if not already defined — safe to call multiple times
+await defineTooltip();
+```
 
 #### Events
 
@@ -105,18 +137,10 @@ Represents where the tooltip will be positioned relative to the target:
 - **`Offset`**
 
 ```ts
-type Offset = [number, number]; // [topOffset, leftOffset]
+type Offset = [number, number]; // [x, y] — x is horizontal (added to left), y is vertical (added to top)
 ```
 
-An array of pixel offsets applied to the computed top and left coordinates.
-
-- **`DirectionCallback`**
-
-```ts
-type DirectionCallback = (target: Element) => { top: number; left: number };
-```
-
-Used internally / available in the types file — returns coordinates for a given target.
+An array of pixel offsets applied to the computed `top` and `left` coordinates. `x` shifts horizontally, `y` shifts vertically.
 
 - **`HtmlCallback`**
 
@@ -162,7 +186,7 @@ tooltip.setDirection((data, target) => {
   return rect.top > 200 ? 'n' : 's';
 });
 
-tooltip.setOffset(() => [6, 0]); // shift 6px down from computed top
+tooltip.setOffset(() => [0, 6]); // shift 6px down (y) from computed top
 
 tooltip.setStyles(`
   .tipviz-tooltip { background: rgba(0,0,0,0.8); color: white; padding: 6px; border-radius: 4px; }

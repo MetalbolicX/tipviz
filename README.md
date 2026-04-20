@@ -14,7 +14,7 @@ Choose one of the options below.
 - CDN (UMD): add the UMD bundle to a page — useful for simple demos or static sites:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/tipviz@2.0.2/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tipviz@2.1.0/dist/index.umd.js"></script>
 <script>
   const tooltip = document.createElement('tip-viz-tooltip');
   document.body.appendChild(tooltip);
@@ -27,7 +27,7 @@ Choose one of the options below.
 
 ```html
 <script type="module">
-  import 'https://cdn.jsdelivr.net/npm/tipviz@2.0.2/dist/index.mjs';
+  import 'https://cdn.jsdelivr.net/npm/tipviz@2.1.0/dist/index.mjs';
 
   const tooltip = document.createElement('tip-viz-tooltip');
   document.body.appendChild(tooltip);
@@ -110,9 +110,19 @@ Install and run locally:
 ```bash
 git clone https://github.com/MetalbolicX/tipviz.git
 cd tipviz
-pnpm install       # or: npm install
-pnpm run dev       # vite dev server
-pnpm run build     # build docs / bundles (tsdown)
+pnpm install       # install deps
+pnpm run dev       # vite dev server (index.html + examples/)
+pnpm run build     # vite build (docs/examples, NOT the library)
+pnpm run tsdown:build # library build — outputs dist/ (cjs, es, umd, dts)
+pnpm run test      # run unit and integration tests
+pnpm run test:watch # run tests in watch mode
+```
+
+Typecheck and lint (ESLint deps not wired to npm scripts — run manually):
+
+```bash
+npx tsc --noEmit
+npx eslint src/
 ```
 
 ## Docs & Examples

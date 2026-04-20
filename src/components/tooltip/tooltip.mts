@@ -61,7 +61,9 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   public disconnectedCallback() {
-    this.#tooltipDiv.innerHTML = "";
+    for (const child of [...this.#tooltipDiv.childNodes]) {
+      child.remove();
+    }
   }
 
   /**
@@ -184,6 +186,7 @@ export class TipVizTooltip extends HTMLElement {
         sheet
       ];
     } catch (error) {
+      console.warn("[tip-viz-tooltip] CSSStyleSheet.replaceSync failed, falling back to <style> injection:", error);
       const style = document.createElement("style");
       style.setAttribute("data-tipviz", "");
       style.textContent = this.#stylesText;
@@ -217,8 +220,16 @@ export class TipVizTooltip extends HTMLElement {
   public show(data: Record<string, unknown>, target: Element) {
     if (!target) return;
 
-    // 1. Update Content (innerHTML is faster than ContextualFragment)
-    this.#tooltipDiv.innerHTML = this.#htmlCallback(data, target);
+    // 1. Update Content using setHTML (sanitized) with fragment fallback
+    const html = this.#htmlCallback(data, target);
+    if ("setHTML" in this.#tooltipDiv) {
+      this.#tooltipDiv.setHTML(html, { sink: "div" });
+    } else {
+      const range = document.createRange();
+      const fragment = range.createContextualFragment(html);
+      this.#tooltipDiv.textContent = "";
+      this.#tooltipDiv.appendChild(fragment);
+    }
 
     // 2. Determine Direction & Offset
     const dir = this.#directionCallback(data, target) as Direction;
@@ -235,8 +246,9 @@ export class TipVizTooltip extends HTMLElement {
     const coordinates = this.#getCoordinates(dir, target);
 
     // Note: window.scrollY/scrollX assumes <tip-viz-tooltip> is appended to document.body
-    this.#tooltipDiv.style.top = `${coordinates.top + offsetX + window.scrollY}px`;
-    this.#tooltipDiv.style.left = `${coordinates.left + offsetY + window.scrollX}px`;
+    // offsetX (horizontal) → left, offsetY (vertical) → top
+    this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
+    this.#tooltipDiv.style.left = `${coordinates.left + offsetX + window.scrollX}px`;
 
     // 5. Reveal
     this.#tooltipDiv.style.opacity = "1";
@@ -280,7 +292,7 @@ export class TipVizTooltip extends HTMLElement {
     const rect = target.getBoundingClientRect();
 
     // Getting this forces a synchronous layout, which is necessary because
-    // we just changed innerHTML and need the new dynamic width/height.
+    // we just updated the tooltip content and need the new dynamic width/height.
     const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
 
     // The math here remains unchanged, it was already accurate.

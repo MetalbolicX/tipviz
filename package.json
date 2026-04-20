@@ -31,7 +31,9 @@
     "docs": "docsify serve docs",
     "build": "vite build",
     "dev": "vite",
-    "tsdown:build": "tsdown"
+    "tsdown:build": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "author": {
     "name": "José Martínez Santana"
@@ -53,9 +55,11 @@
   "devDependencies": {
     "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
+    "jsdom": "^29.0.2",
     "tsdown": "^0.21.7",
     "typescript": "^6.0.2",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "vitest": "^4.1.4"
   },
   "module": "./dist/index.mjs"
 }

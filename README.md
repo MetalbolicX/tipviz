@@ -1,143 +1,148 @@
 # tipviz
 
-> Discover insights on hover with a tooltip web component.
+> Drop-in tooltip web component for data visualizations. Zero dependencies, works anywhere.
 
-## Overview
+Add rich, interactive tooltips to D3 charts or any DOM element with a few lines of code. The `<tip-viz-tooltip>` custom element handles positioning, HTML content, and styling — no framework required.
 
-- Tiny, dependency-free Web Component written in TypeScript.
-- Designed for D3 and any DOM-based UI where positional tooltips are needed.
+## Features
+
+- **Framework-agnostic** — vanilla JS, React, Vue, Svelte, D3… if it renders HTML, tooltips work
+- **Shadow DOM encapsulation** — styles don't leak in or out
+- **Auto-positioning** — moves itself to `document.body` for correct scroll-aware placement
+- **Three styling modes** — `setStyles()`, `stylesheet` attribute, or CSS `::part()`
+- **Sanitized HTML** — uses `setHTML()` with fragment fallback; no raw `innerHTML`
+- **8 directional placements** — `n`, `s`, `e`, `w`, `nw`, `ne`, `sw`, `se`
+- **Typed API** — full TypeScript types included
 
 ## Installation
 
-Choose one of the options below.
+**CDN (ESM)** — add one script tag and go:
 
-- CDN (UMD): add the UMD bundle to a page — useful for simple demos or static sites:
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.mjs"></script>
+```
+
+**CDN (UMD)** — no ES modules support:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.umd.js"></script>
-<script>
-  const tooltip = document.createElement('tip-viz-tooltip');
-  document.body.appendChild(tooltip);
-  tooltip.setHtml(d => `<div>${d.label}</div>`);
-  // ...use tooltip.show(data, target) / tooltip.hide()
-</script>
 ```
 
-- ESM (browser/module bundlers): import the module so the custom element is registered:
-
-```html
-<script type="module">
-  import 'https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.mjs';
-
-  const tooltip = document.createElement('tip-viz-tooltip');
-  document.body.appendChild(tooltip);
-  tooltip.setHtml(data => `<div class="tip">${data.value}</div>`);
-  // tooltip.show({ value: 42 }, someElement);
-</script>
-```
-
-- npm (framework projects / bundlers):
+**npm / pnpm / yarn / bun**:
 
 ```bash
-npm install tipviz
-# or pnpm add tipviz
+npm i tipviz
+# pnpm add tipviz / yarn add tipviz / bun add tipviz
 ```
 
-Then import in your app (React, Vue, Svelte, etc.):
-
-```js
-import 'tipviz'; // registers <tip-viz-tooltip>
-
-// create and use from DOM or framework refs
-const tooltip = document.createElement('tip-viz-tooltip');
-document.body.appendChild(tooltip);
-```
+---
 
 ## Quick Usage
 
-The component exposes a small JS API for content, placement and styling.
-
 ```js
-// create or query the element
-const tooltip = document.querySelector('tip-viz-tooltip') || document.createElement('tip-viz-tooltip');
-document.body.appendChild(tooltip);
+// 1. Place in HTML (anywhere — it auto-moves to body)
+<tip-viz-tooltip id="tooltip"></tip-viz-tooltip>
 
-// content
-tooltip.setHtml((data, target) => `<div class="tooltip-content">${data.label}</div>`);
+// 2. Configure
+const tooltip = document.getElementById("tooltip");
+tooltip.setHtml((data) => `<div>${data.label}: ${data.value}</div>`);
+tooltip.setDirection(() => "n");          // n | s | e | w | nw | ne | sw | se
+tooltip.setOffset(() => [0, 8]);        // [x, y] — x→left, y→top
+tooltip.setStyles(`
+  .tipviz-tooltip { background: rgba(0,0,0,0.85); color: white; padding: 6px; border-radius: 4px; }
+`);
 
-// placement and tuning
-tooltip.setDirection((data, target) => 'n');           // 'n'|'s'|'e'|'w'|'nw'|'ne'|'sw'|'se'
-tooltip.setOffset((data, target) => [0, 8]);           // [x, y] pixels
-
-// styles
-tooltip.setStyles(`.tipviz-tooltip { background: rgba(0,0,0,0.85); color: white; padding: 6px; border-radius: 4px; }`);
-tooltip.loadStylesheet('https://example.com/tooltip.css'); // loads inside shadow root
-
-// show / hide
-tooltip.show({ label: 'Value: 42' }, someElement);
-tooltip.hide();
-
-// listen to events
-tooltip.addEventListener('show', e => console.log('shown', e.detail));
-tooltip.addEventListener('hide', () => console.log('hidden'));
+// 3. Show / hide on interaction
+element.addEventListener("mouseenter", (e) => tooltip.show(someData, e.currentTarget));
+element.addEventListener("mouseleave", () => tooltip.hide());
 ```
 
-## API (summary)
+---
 
-- Methods
-  - `setHtml(fn: HtmlCallback)` — set HTML content generator
-  - `setStyles(css: string)` — apply scoped CSS (adoptedStyleSheets when available)
-  - `loadStylesheet(url: string)` — insert external stylesheet into shadow root
-  - `setDirection(fn: DirectionFn)` — placement callback returning `n|s|e|w|nw|ne|sw|se`
-  - `setOffset(fn: OffsetCallback)` — return `[x, y]` offset in pixels
-  - `show(data: Record<string, unknown>, target: Element)` — render and position tooltip
-  - `hide()` — hide the tooltip
+## API Reference
 
-- Attributes
-  - `transition-duration` — opacity transition time (ms)
-  - `stylesheet` — URL to load inside the component shadow root
+### Methods
 
-- Events
-  - `show` — dispatched when tooltip is shown; `detail` contains `{ target, data, direction, position }`
-  - `hide` — dispatched when tooltip is hidden
+| Method | Description |
+|--------|-------------|
+| `setHtml(fn)` | Sets the HTML content callback `(data, target) => string` |
+| `setDirection(fn)` | Sets the placement direction callback `(data, target) => Direction` |
+| `setOffset(fn)` | Sets the pixel offset callback `(data, target) => [x, y]` |
+| `setStyles(css)` | Injects CSS via `CSSStyleSheet` with `<style>` fallback |
+| `loadStylesheet(url)` | Loads an external stylesheet into the shadow root |
+| `show(data, target)` | Renders and positions the tooltip |
+| `hide()` | Hides the tooltip |
+
+### Attributes
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `transition-duration` | `200` | Fade duration in milliseconds |
+| `stylesheet` | — | URL to load inside the shadow root |
+| `no-auto-reposition` | — | Opt out of auto-moving to `document.body` |
+
+### Events
+
+```js
+tooltip.addEventListener("show", (e) => {
+  console.log(e.detail.target, e.detail.data, e.detail.direction, e.detail.position);
+});
+tooltip.addEventListener("hide", () => { /* ... */ });
+```
+
+---
+
+## Styling
+
+Three independent options:
+
+```js
+// 1. CSS string injected into shadow root
+tooltip.setStyles(`.tipviz-tooltip { background: black; color: white; }`);
+
+// 2. External stylesheet loaded into shadow root
+// <tip-viz-tooltip stylesheet="/tooltip.css"></tip-viz-tooltip>
+
+// 3. CSS ::part() from outside the shadow DOM
+// tip-viz-tooltip::part(tooltip-box) { background: black; color: white; }
+```
+
+---
+
+## Documentation
+
+- [Quick Reference](https://metalbolicx.github.io/tipviz/#/llm-doc) — compact API cheat sheet
+- [Getting Started](https://metalbolicx.github.io/tipviz/#/getting-started) — step-by-step setup
+- [API Reference](https://metalbolicx.github.io/tipviz/#/api-reference) — full API documentation
+- [Tutorials](https://metalbolicx.github.io/tipviz/#/tutorials) — D3 integration examples
+
+---
 
 ## Development
 
-- Requirements: Node.js >= 18
-
-Install and run locally:
+**Requirements:** Node.js >= 18
 
 ```bash
 git clone https://github.com/MetalbolicX/tipviz.git
 cd tipviz
-pnpm install       # install deps
-pnpm run dev       # vite dev server (index.html + examples/)
-pnpm run build     # vite build (docs/examples, NOT the library)
-pnpm run tsdown:build # library build — outputs dist/ (cjs, es, umd, dts)
-pnpm run test      # run unit and integration tests
-pnpm run test:watch # run tests in watch mode
+pnpm install
+
+pnpm run dev           # vite dev server (demo + examples)
+pnpm run build         # vite build (docs / demo)
+pnpm run tsdown:build  # library build → dist/ (cjs, es, umd, dts)
+pnpm run test          # unit + integration tests
+pnpm run test:watch    # watch mode
 ```
 
-Typecheck and lint (ESLint deps not wired to npm scripts — run manually):
+Typecheck and lint (not wired to npm scripts):
 
 ```bash
 npx tsc --noEmit
 npx eslint src/
 ```
 
-## Docs & Examples
-
-Comprehensive API docs and examples are hosted at the project site:
-
-[https://metalbolicx.github.io/tipviz](https://metalbolicx.github.io/tipviz)
-
-## Contributing
-
-Contributions are welcome — open issues or PRs on GitHub. Keep changes focused and include examples/tests where appropriate.
+---
 
 ## License
 
-MIT — see the LICENSE file.
-
----
-Small note: the primary runtime element is `<tip-viz-tooltip>` (class `TipVizTooltip`).
+MIT — see the [LICENSE](LICENSE) file.

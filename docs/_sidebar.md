@@ -2,3 +2,4 @@
 - [Getting Started](/getting-started)
 - [API Reference](/api-reference)
 - [Tutorials](/tutorials)
+- [Quick Reference](/llm-doc)

@@ -8,7 +8,7 @@ import {
 
 export class TipVizTooltip extends HTMLElement {
   public static get observedAttributes() {
-    return ["transition-duration", "stylesheet"];
+    return ["transition-duration", "stylesheet", "no-auto-reposition"];
   }
 
   #htmlCallback: HtmlCallback = () => " ";
@@ -43,6 +43,10 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   public connectedCallback() {
+    if (!this.hasAttribute("no-auto-reposition") && this.parentElement !== document.body) {
+      document.body.appendChild(this);
+    }
+
     const duration = this.getAttribute("transition-duration");
     if (duration) this.#updateTransitionDuration(duration);
 

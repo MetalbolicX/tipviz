@@ -14,7 +14,7 @@ Choose one of the options below.
 - CDN (UMD): add the UMD bundle to a page — useful for simple demos or static sites:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/tipviz@2.1.0/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.umd.js"></script>
 <script>
   const tooltip = document.createElement('tip-viz-tooltip');
   document.body.appendChild(tooltip);
@@ -27,7 +27,7 @@ Choose one of the options below.
 
 ```html
 <script type="module">
-  import 'https://cdn.jsdelivr.net/npm/tipviz@2.1.0/dist/index.mjs';
+  import 'https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.mjs';
 
   const tooltip = document.createElement('tip-viz-tooltip');
   document.body.appendChild(tooltip);

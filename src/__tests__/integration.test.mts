@@ -76,6 +76,32 @@ describe("integration: src/index.mts", () => {
     }).not.toThrow();
   });
 
+  it("moves to document.body on connect when placed inside another container", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
+    container.appendChild(tooltip);
+
+    expect(tooltip.parentElement).toBe(document.body);
+    expect(container.childNodes.length).toBe(0);
+
+    document.body.textContent = "";
+  });
+
+  it("does not move to body when no-auto-reposition attribute is set", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
+    tooltip.setAttribute("no-auto-reposition", "");
+    container.appendChild(tooltip);
+
+    expect(tooltip.parentElement).toBe(container);
+
+    document.body.textContent = "";
+  });
+
   it("can create and use a tooltip end-to-end", () => {
     const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
     const target = document.createElement("div");

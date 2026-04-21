@@ -63,7 +63,7 @@ describe("TipVizTooltip", () => {
   });
 
   it("has expected observed attributes", () => {
-    expect(TipVizTooltip.observedAttributes).toEqual(["transition-duration", "stylesheet"]);
+    expect(TipVizTooltip.observedAttributes).toEqual(["transition-duration", "stylesheet", "no-auto-reposition"]);
   });
 
   it("applies transition-duration from attribute on connect", () => {

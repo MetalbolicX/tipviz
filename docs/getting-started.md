@@ -143,5 +143,3 @@ circles.forEach(circle => {
   circle.addEventListener("mouseleave", () => tooltip.hide());
 });
 ```
-
-See the [API Reference](/api-reference) for full details on all methods, attributes, and events.

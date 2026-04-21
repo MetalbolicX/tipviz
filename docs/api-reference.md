@@ -16,6 +16,7 @@ This page documents the public API, attributes, types and usage examples for the
 
 - `transition-duration` (number): optional; controls the fade duration for show/hide in milliseconds. Defaults to `200ms`.
 - `stylesheet` (string): optional; URL to a stylesheet that will be added inside the component's shadow root.
+- `no-auto-reposition` (boolean): optional; if present, the element will not be moved to `document.body` on connect. See [Automatic repositioning](#automatic-repositioning-to-documentbody) for details.
 
 ### Working with the component in JavaScript
 
@@ -90,6 +91,26 @@ tip-viz-tooltip::part(tooltip-box) {
 ```
 
 This approach does **not** require `setStyles()` and works independently of the internal CSS mechanism.
+
+#### Automatic repositioning to `document.body`
+
+The component **automatically moves itself to `document.body`** when connected. This ensures correct `window.scrollY`/`window.scrollX` positioning regardless of where you place the element in HTML — including inside framework root containers (`<div id="root">`), modals, or sidebar panels.
+
+```html
+<!-- This works correctly even inside a React root or Vue app container -->
+<div id="root">
+  <svg id="chart"></svg>
+  <tip-viz-tooltip id="tooltip"></tip-viz-tooltip> <!-- will be moved to body -->
+</div>
+```
+
+If you need to prevent this behavior, use the `no-auto-reposition` attribute:
+
+```html
+<tip-viz-tooltip id="tooltip" no-auto-reposition></tip-viz-tooltip>
+```
+
+> [!Note] The element is repositioned only once — on first connection. Moving it manually after that is not supported.
 
 #### Lazy registration with `defineTooltip()`
 

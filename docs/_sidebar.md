@@ -3,3 +3,4 @@
 - [API Reference](/api-reference)
 - [Tutorials](/tutorials)
 - [Quick Reference](/llm-doc)
+- [Workflow Diagrams](/workflow)

@@ -184,30 +184,61 @@ describe("TipVizTooltip", () => {
     expect(tooltipBox.childNodes.length).toBe(0);
   });
 
-  it("falls back to style element when CSSStyleSheet.replaceSync fails", () => {
-    const originalCSSStyleSheet = globalThis.CSSStyleSheet;
-    class ThrowingCSSStyleSheet {
-      replaceSync() {
-        throw new Error("replaceSync failed");
-      }
-    }
-
-    Object.defineProperty(globalThis, "CSSStyleSheet", {
-      value: ThrowingCSSStyleSheet,
-      configurable: true,
-      writable: true,
-    });
-
+  it("setStyles() called multiple times only applies the latest CSS", () => {
     tooltip.setStyles(".tipviz-tooltip { color: red; }");
+    tooltip.setStyles(".tipviz-tooltip { color: blue; }");
+    tooltip.setStyles(".tipviz-tooltip { color: green; }");
 
-    const styleTag = tooltip.shadowRoot?.querySelector("style[data-tipviz]");
-    expect(styleTag).not.toBeNull();
-    expect(styleTag?.textContent).toContain("color: red");
+    const fallbackStyles = tooltip.shadowRoot?.querySelectorAll("style[data-tipviz]");
+    expect(fallbackStyles?.length).toBe(1);
+    expect(fallbackStyles?.item(0)?.textContent).toContain("color: green");
+  });
 
-    Object.defineProperty(globalThis, "CSSStyleSheet", {
-      value: originalCSSStyleSheet,
-      configurable: true,
-      writable: true,
-    });
+  it("setStyles() cleans up previous loadStylesheet() link", () => {
+    tooltip.loadStylesheet("/external.css");
+    tooltip.setStyles(".tipviz-tooltip { color: violet; }");
+
+    const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
+    expect(link).toBeNull();
+  });
+
+  it("loadStylesheet() cleans up previous setStyles() fallback style", () => {
+    tooltip.setStyles(".tipviz-tooltip { color: orange; }");
+    tooltip.loadStylesheet("/another.css");
+
+    const fallbackStyle = tooltip.shadowRoot?.querySelector("style[data-tipviz]");
+    expect(fallbackStyle).toBeNull();
+
+    const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute("href")).toBe("/another.css");
+  });
+
+  it("switching from loadStylesheet to setStyles and back clears stale resources", () => {
+    tooltip.loadStylesheet("/first.css");
+    tooltip.setStyles(".tipviz-tooltip { color: teal; }");
+    tooltip.loadStylesheet("/second.css");
+
+    const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
+    const fallbackStyle = tooltip.shadowRoot?.querySelector("style[data-tipviz]");
+
+    expect(link?.getAttribute("href")).toBe("/second.css");
+    expect(fallbackStyle).toBeNull();
+  });
+
+  it("empty string to setStyles() clears all styles", () => {
+    tooltip.setStyles(".tipviz-tooltip { color: pink; }");
+    tooltip.setStyles("");
+
+    const fallbackStyles = tooltip.shadowRoot?.querySelectorAll("style[data-tipviz]");
+    expect(fallbackStyles?.length).toBe(0);
+  });
+
+  it("loadStylesheet with empty url removes the link", () => {
+    tooltip.loadStylesheet("/valid.css");
+    tooltip.loadStylesheet("");
+
+    const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
+    expect(link).toBeNull();
   });
 });

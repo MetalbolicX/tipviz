@@ -29,44 +29,51 @@ export default tseslint.config(
     },
     rules: {
       // --- Formatting & Basic Syntax ---
-      "quotes": ["error", "double"],
-      "semi": ["error", "always"],
+      quotes: ["error", "double"],
+      semi: ["error", "always"],
       "no-var": "error",
       "prefer-const": "error",
-      "eqeqeq": ["error", "always"],
+      eqeqeq: ["error", "always"],
 
       // Enforce template literals, forbid '+' for concatenation
       "prefer-template": "error",
       "no-restricted-syntax": [
         "error",
         {
-          selector: "BinaryExpression[operator='+'][left.type='Literal'][left.value=/./], BinaryExpression[operator='+'][right.type='Literal'][right.value=/./]",
-          message: "Do not use '+' for string concatenation. Use template literals.",
+          selector:
+            "BinaryExpression[operator='+'][left.type='Literal'][left.value=/./], BinaryExpression[operator='+'][right.type='Literal'][right.value=/./]",
+          message:
+            "Do not use '+' for string concatenation. Use template literals.",
         },
         {
           selector: "CallExpression[callee.property.name='push']",
-          message: "Do not use .push(). Use the spread operator to maintain immutability.",
+          message:
+            "Do not use .push(). Use the spread operator to maintain immutability.",
         },
         {
           selector: "ForStatement",
-          message: "Avoid standard for-loops. Use for...of or array methods (map, filter, etc.).",
+          message:
+            "Avoid standard for-loops. Use for...of or array methods (map, filter, etc.).",
         },
       ],
 
       // --- Naming Conventions ---
       // Supports kebab-case and name.type.extension (e.g., user.route.ts)
-      "unicorn/filename-case": ["error", { "regex": "^[a-z0-9-]+(\\.[a-z0-9-]+)*$" }],
-      
+      "unicorn/filename-case": [
+        "error",
+        { regex: "^[a-z0-9-]+(\\.[a-z0-9-]+)*$" },
+      ],
+
       "@typescript-eslint/naming-convention": [
         "error",
-        { "selector": "class", "format": ["PascalCase"] },
-        { "selector": ["variable", "function", "method"], "format": ["camelCase"] },
+        { selector: "class", format: ["PascalCase"] },
+        { selector: ["variable", "function", "method"], format: ["camelCase"] },
         // Enforce verbs for booleans
-        { 
-          "selector": "variable", 
-          "types": ["boolean"], 
-          "format": ["camelCase"], 
-          "prefix": ["is", "has", "can", "should", "will", "did"] 
+        {
+          selector: "variable",
+          types: ["boolean"],
+          format: ["camelCase"],
+          prefix: ["is", "has", "can", "should", "will", "did"],
         },
       ],
 
@@ -75,15 +82,18 @@ export default tseslint.config(
       "@typescript-eslint/explicit-function-return-type": "off",
 
       // --- JSDoc (Enforced for JS and TS) ---
-      "jsdoc/require-jsdoc": ["warn", { 
-        "require": {
-          "FunctionDeclaration": true,
-          "MethodDefinition": true,
-          "ClassDeclaration": true,
-          "ArrowFunctionExpression": true
+      "jsdoc/require-jsdoc": [
+        "warn",
+        {
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: true,
+          },
+          contexts: ["VariableDeclaration"],
         },
-        "contexts": ["VariableDeclaration"]
-      }],
+      ],
       "jsdoc/check-alignment": "warn",
       "jsdoc/require-description": "warn",
 
@@ -91,12 +101,19 @@ export default tseslint.config(
       "unicorn/prefer-node-protocol": "error", // Use node: prefix
       "no-restricted-properties": [
         "error",
-        { "property": "innerHTML", "message": "Use textContent or createContextualFragment instead." }
+        {
+          property: "innerHTML",
+          message: "Use textContent or createContextualFragment instead.",
+        },
       ],
       "no-restricted-globals": [
         "error",
-        { "name": "fetch", "message": "Ensure AbortController is used with fetch if needed for cancellation." }
-      ]
+        {
+          name: "fetch",
+          message:
+            "Ensure AbortController is used with fetch if needed for cancellation.",
+        },
+      ],
     },
-  }
+  },
 );

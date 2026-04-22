@@ -13,6 +13,7 @@ export class TipVizTooltip extends HTMLElement {
 
   #htmlCallback: HtmlCallback = () => " ";
   #stylesText = "";
+  #adoptedStylesheet: CSSStyleSheet | null = null;
   #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
   #offsetCallback: OffsetCallback = () => DEFAULT_OFFSET;
 
@@ -91,14 +92,27 @@ export class TipVizTooltip extends HTMLElement {
    * ```
    */
   public loadStylesheet(url: string) {
+    this.#stylesText = "";
+    this.#removeInlineStyles();
+    this.#removeAdoptedStylesheet();
+
+    const stylesheetUrl = url.trim();
+    if (!stylesheetUrl) {
+      this.#removeStylesheetLink();
+      return;
+    }
+
     let link = this.#shadow.querySelector<HTMLLinkElement>('link[data-tipviz-link]');
     if (!link) {
       link = document.createElement("link");
       link.setAttribute("rel", "stylesheet");
       link.setAttribute("data-tipviz-link", "");
+      link.addEventListener("error", () => {
+        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${link?.href}`);
+      });
       this.#shadow.insertBefore(link, this.#tooltipDiv);
     }
-    link.href = url;
+    link.href = stylesheetUrl;
   }
 
   /**
@@ -173,8 +187,9 @@ export class TipVizTooltip extends HTMLElement {
   public setStyles(css: string) {
     this.#stylesText = css;
 
-    const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
-    if (oldStyle) oldStyle.remove();
+    this.#removeStylesheetLink();
+    this.#removeInlineStyles();
+    this.#removeAdoptedStylesheet();
 
     if (!this.#stylesText) return;
 
@@ -183,12 +198,8 @@ export class TipVizTooltip extends HTMLElement {
       sheet.replaceSync(this.#stylesText);
 
       const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-      root.adoptedStyleSheets = [
-        ...root.adoptedStyleSheets.filter(
-          s => !(s as any).ownerNode?.hasAttribute?.("data-tipviz")
-        ),
-        sheet
-      ];
+      root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      this.#adoptedStylesheet = sheet;
     } catch (error) {
       console.warn("[tip-viz-tooltip] CSSStyleSheet.replaceSync failed, falling back to <style> injection:", error);
       const style = document.createElement("style");
@@ -196,6 +207,25 @@ export class TipVizTooltip extends HTMLElement {
       style.textContent = this.#stylesText;
       this.#shadow.appendChild(style);
     }
+  }
+
+  #removeInlineStyles() {
+    const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
+    if (oldStyle) oldStyle.remove();
+  }
+
+  #removeStylesheetLink() {
+    const link = this.#shadow.querySelector("link[data-tipviz-link]");
+    if (link) link.remove();
+  }
+
+  #removeAdoptedStylesheet() {
+    if (!this.#adoptedStylesheet) return;
+    const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+    root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
+      (sheet) => sheet !== this.#adoptedStylesheet
+    );
+    this.#adoptedStylesheet = null;
   }
 
 

@@ -90,28 +90,63 @@ const createScatterPlot = (
 
   tooltip.setHtml(
     ({ x, y }: ScatterPlotPoint) => /*html*/ `
-      <ul class="tooltip-content">
-        <li><strong>X:</strong> ${x}</li>
-        <li><strong>Y:</strong> ${y}</li>
-      </ul>`
+      <div class="tooltip-container">
+        <div class="tooltip-header">Point Data</div>
+        <div class="tooltip-row">
+          <span class="label">X Value</span>
+          <span class="value">${x}</span>
+        </div>
+        <div class="tooltip-row">
+          <span class="label">Y Value</span>
+          <span class="value">${y}</span>
+        </div>
+      </div>`
   );
   tooltip.setStyles(/*css*/ `
-      .tooltip-content {
-        font-family: sans-serif;
-        width: 7em;
-        background: #AAA;
-        color: #333;
-        border-radius: 4px;
-        padding: 8px 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        font-size: 14px;
+      .tooltip-container {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        min-width: 120px;
+        background: #ffffff;
+        color: #1a1a1a;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e1e4e8;
+      }
 
-        li {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-          display: inline-block;
-        }
+      .tooltip-header {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #707070;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 4px;
+      }
+
+      .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+
+      .tooltip-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .label {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .value {
+        font-size: 12px;
+        font-weight: 600;
+        color: #000;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       }
     `.trim()
   );

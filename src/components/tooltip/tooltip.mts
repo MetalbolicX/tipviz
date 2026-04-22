@@ -193,6 +193,11 @@ export class TipVizTooltip extends HTMLElement {
 
     if (!this.#stylesText) return;
 
+    const style = document.createElement("style");
+    style.setAttribute("data-tipviz", "");
+    style.textContent = this.#stylesText;
+    this.#shadow.appendChild(style);
+
     try {
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(this.#stylesText);
@@ -201,11 +206,7 @@ export class TipVizTooltip extends HTMLElement {
       root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
       this.#adoptedStylesheet = sheet;
     } catch (error) {
-      console.warn("[tip-viz-tooltip] CSSStyleSheet.replaceSync failed, falling back to <style> injection:", error);
-      const style = document.createElement("style");
-      style.setAttribute("data-tipviz", "");
-      style.textContent = this.#stylesText;
-      this.#shadow.appendChild(style);
+      console.debug("[tip-viz-tooltip] adoptedStyleSheets unavailable, using <style> injection:", error);
     }
   }
 
@@ -254,16 +255,12 @@ export class TipVizTooltip extends HTMLElement {
   public show(data: Record<string, unknown>, target: Element) {
     if (!target) return;
 
-    // 1. Update Content using setHTML (sanitized) with fragment fallback
+    // 1. Update Content
     const html = this.#htmlCallback(data, target);
-    if ("setHTML" in this.#tooltipDiv) {
-      this.#tooltipDiv.setHTML(html, { sink: "div" });
-    } else {
-      const range = document.createRange();
-      const fragment = range.createContextualFragment(html);
-      this.#tooltipDiv.textContent = "";
-      this.#tooltipDiv.appendChild(fragment);
-    }
+    const range = document.createRange();
+    const fragment = range.createContextualFragment(html);
+    this.#tooltipDiv.textContent = "";
+    this.#tooltipDiv.appendChild(fragment);
 
     // 2. Determine Direction & Offset
     const dir = this.#directionCallback(data, target) as Direction;

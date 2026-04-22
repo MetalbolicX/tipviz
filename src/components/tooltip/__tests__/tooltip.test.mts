@@ -97,22 +97,13 @@ describe("TipVizTooltip", () => {
     expect(tooltipBox.style.pointerEvents).toBe("all");
   });
 
-  it("uses setHTML when available", () => {
-    const tooltipBox = getTooltipBox(tooltip);
-    const setHTML = vi.fn((html: string) => {
-      tooltipBox.textContent = html;
-    });
-
-    Object.defineProperty(tooltipBox, "setHTML", {
-      value: setHTML,
-      configurable: true,
-      writable: true,
-    });
-
+  it("parses html content into elements on show", () => {
     tooltip.setHtml(() => "<strong>Safe HTML</strong>");
     tooltip.show({}, target);
 
-    expect(setHTML).toHaveBeenCalledWith("<strong>Safe HTML</strong>", { sink: "div" });
+    const tooltipBox = getTooltipBox(tooltip);
+    const strongNode = tooltipBox.querySelector("strong");
+    expect(strongNode?.textContent).toBe("Safe HTML");
   });
 
   it("applies direction classes and removes previous direction class", () => {

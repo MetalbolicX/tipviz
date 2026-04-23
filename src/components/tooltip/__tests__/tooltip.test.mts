@@ -97,13 +97,17 @@ describe("TipVizTooltip", () => {
     expect(tooltipBox.style.pointerEvents).toBe("all");
   });
 
-  it("parses html content into elements on show", () => {
-    tooltip.setHtml(() => "<strong>Safe HTML</strong>");
+  it("skips re-rendering when html is unchanged between show calls", () => {
+    tooltip.setHtml(() => "<span class='value'>42</span>");
     tooltip.show({}, target);
 
     const tooltipBox = getTooltipBox(tooltip);
-    const strongNode = tooltipBox.querySelector("strong");
-    expect(strongNode?.textContent).toBe("Safe HTML");
+    const firstNode = tooltipBox.querySelector(".value");
+
+    tooltip.show({}, target);
+    const secondNode = tooltipBox.querySelector(".value");
+
+    expect(firstNode).toBe(secondNode);
   });
 
   it("applies direction classes and removes previous direction class", () => {

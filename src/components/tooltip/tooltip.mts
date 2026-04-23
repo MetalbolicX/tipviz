@@ -12,6 +12,7 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   #htmlCallback: HtmlCallback = () => " ";
+  #lastHtml = "";
   #stylesText = "";
   #adoptedStylesheet: CSSStyleSheet | null = null;
   #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
@@ -255,12 +256,15 @@ export class TipVizTooltip extends HTMLElement {
   public show(data: Record<string, unknown>, target: Element) {
     if (!target) return;
 
-    // 1. Update Content
+    // 1. Update Content (skip re-render when HTML is unchanged)
     const html = this.#htmlCallback(data, target);
-    const range = document.createRange();
-    const fragment = range.createContextualFragment(html);
-    this.#tooltipDiv.textContent = "";
-    this.#tooltipDiv.appendChild(fragment);
+    if (html !== this.#lastHtml) {
+      this.#lastHtml = html;
+      const range = document.createRange();
+      const fragment = range.createContextualFragment(html);
+      this.#tooltipDiv.textContent = "";
+      this.#tooltipDiv.appendChild(fragment);
+    }
 
     // 2. Determine Direction & Offset
     const dir = this.#directionCallback(data, target) as Direction;

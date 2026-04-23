@@ -1,6 +1,7 @@
+import { sanitize } from "./sanitize.mjs";
 import {
   Direction, HtmlCallback,
-  OffsetCallback, DirectionFn
+  OffsetCallback, DirectionFn, SanitizerFn
 } from "./types.mjs";
 import {
   DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION
@@ -17,6 +18,7 @@ export class TipVizTooltip extends HTMLElement {
   #adoptedStylesheet: CSSStyleSheet | null = null;
   #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
   #offsetCallback: OffsetCallback = () => DEFAULT_OFFSET;
+  #sanitizer: SanitizerFn = sanitize;
 
   #shadow: ShadowRoot;
   #tooltipDiv: HTMLDivElement;
@@ -165,6 +167,23 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
+   * Sets a custom sanitizer function for HTML content.
+   * @param fn - A function that receives raw HTML and returns sanitized HTML.
+   *              Pass `null` to disable sanitization (trusted content only).
+   * @example
+   * ```typescript
+   * // Use default DOMPurify-like sanitizer
+   * tooltip.setSanitizer(null); // disable for trusted HTML
+   *
+   * // Use custom sanitizer
+   * tooltip.setSanitizer((html) => mySanitize(html));
+   * ```
+   */
+  public setSanitizer(fn: SanitizerFn | null) {
+    this.#sanitizer = fn ?? ((html: string) => html);
+  }
+
+  /**
    * Sets custom CSS styles for the tooltip component.
    * @description
    * Attempts to use the modern CSSStyleSheet API with adoptedStyleSheets for better performance.
@@ -257,11 +276,12 @@ export class TipVizTooltip extends HTMLElement {
     if (!target) return;
 
     // 1. Update Content (skip re-render when HTML is unchanged)
-    const html = this.#htmlCallback(data, target);
-    if (html !== this.#lastHtml) {
-      this.#lastHtml = html;
+    const rawHtml = this.#htmlCallback(data, target);
+    const safeHtml = this.#sanitizer(rawHtml);
+    if (safeHtml !== this.#lastHtml) {
+      this.#lastHtml = safeHtml;
       const range = document.createRange();
-      const fragment = range.createContextualFragment(html);
+      const fragment = range.createContextualFragment(safeHtml);
       this.#tooltipDiv.textContent = "";
       this.#tooltipDiv.appendChild(fragment);
     }

@@ -1,13 +1,19 @@
 import { sanitize } from "./sanitize.mjs";
 import {
-  Direction, HtmlCallback,
-  OffsetCallback, DirectionFn, SanitizerFn
+  Direction,
+  HtmlCallback,
+  OffsetCallback,
+  DirectionFn,
+  SanitizerFn,
+  TooltipData,
 } from "./types.mjs";
 import {
   DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION
 } from "./constants.mjs";
 
 export class TipVizTooltip extends HTMLElement {
+  static #idCounter = 0;
+
   public static get observedAttributes() {
     return ["transition-duration", "stylesheet", "no-auto-reposition"];
   }
@@ -19,6 +25,7 @@ export class TipVizTooltip extends HTMLElement {
   #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
   #offsetCallback: OffsetCallback = () => DEFAULT_OFFSET;
   #sanitizer: SanitizerFn = sanitize;
+  #activeTarget: Element | null = null;
 
   #shadow: ShadowRoot;
   #tooltipDiv: HTMLDivElement;
@@ -31,6 +38,8 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv = document.createElement("div");
     this.#tooltipDiv.className = "tipviz-tooltip";
     this.#tooltipDiv.setAttribute("part", "tooltip-box");
+    this.#tooltipDiv.setAttribute("role", "tooltip");
+    this.#tooltipDiv.setAttribute("aria-hidden", "true");
 
     // Base styles
     Object.assign(this.#tooltipDiv.style, {
@@ -47,6 +56,8 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   public connectedCallback() {
+    this.#ensureAccessibleHostAttributes();
+
     if (!this.hasAttribute("no-auto-reposition") && this.parentElement !== document.body) {
       document.body.appendChild(this);
     }
@@ -69,8 +80,20 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   public disconnectedCallback() {
+    this.#clearDescribedBy();
+    this.#removeStylesheetLink();
+    this.#removeInlineStyles();
+    this.#removeAdoptedStylesheet();
+
     for (const child of [...this.#tooltipDiv.childNodes]) {
       child.remove();
+    }
+
+    this.#lastHtml = "";
+    this.#stylesText = "";
+    if (this.#currentDirection) {
+      this.#tooltipDiv.classList.remove(this.#currentDirection);
+      this.#currentDirection = null;
     }
   }
 
@@ -82,7 +105,11 @@ export class TipVizTooltip extends HTMLElement {
    * transition style property for opacity changes.
    */
   #updateTransitionDuration(duration: string) {
-    this.#transitionDuration = parseInt(duration, 10);
+    const nextDuration = parseInt(duration, 10);
+    if (!Number.isNaN(nextDuration)) {
+      this.#transitionDuration = nextDuration;
+    }
+
     this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
   }
 
@@ -126,8 +153,8 @@ export class TipVizTooltip extends HTMLElement {
    * tooltip.setHtml(() => '<div class="custom-content">Hello World</div>');
    * ```
    */
-  public setHtml(fn: HtmlCallback) {
-    this.#htmlCallback = fn;
+  public setHtml<TData extends TooltipData>(fn: HtmlCallback<TData>) {
+    this.#htmlCallback = fn as HtmlCallback;
   }
 
   /**
@@ -144,8 +171,8 @@ export class TipVizTooltip extends HTMLElement {
    * });
    * ```
    */
-  public setDirection(fn: DirectionFn) {
-    this.#directionCallback = fn;
+  public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
+    this.#directionCallback = fn as DirectionFn;
   }
 
 
@@ -162,8 +189,8 @@ export class TipVizTooltip extends HTMLElement {
    * });
    * ```
    */
-  public setOffset(fn: OffsetCallback) {
-    this.#offsetCallback = fn;
+  public setOffset<TData extends TooltipData>(fn: OffsetCallback<TData>) {
+    this.#offsetCallback = fn as OffsetCallback;
   }
 
   /**
@@ -213,11 +240,6 @@ export class TipVizTooltip extends HTMLElement {
 
     if (!this.#stylesText) return;
 
-    const style = document.createElement("style");
-    style.setAttribute("data-tipviz", "");
-    style.textContent = this.#stylesText;
-    this.#shadow.appendChild(style);
-
     try {
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(this.#stylesText);
@@ -226,6 +248,10 @@ export class TipVizTooltip extends HTMLElement {
       root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
       this.#adoptedStylesheet = sheet;
     } catch (error) {
+      const style = document.createElement("style");
+      style.setAttribute("data-tipviz", "");
+      style.textContent = this.#stylesText;
+      this.#shadow.appendChild(style);
       console.debug("[tip-viz-tooltip] adoptedStyleSheets unavailable, using <style> injection:", error);
     }
   }
@@ -272,8 +298,8 @@ export class TipVizTooltip extends HTMLElement {
    * tooltip.show({ message: 'Hello!' }, targetElement);
    * ```
    */
-  public show(data: Record<string, unknown>, target: Element) {
-    if (!target) return;
+  public show(data: TooltipData, target: Element) {
+    if (!target || !target.isConnected) return;
 
     // 1. Update Content (skip re-render when HTML is unchanged)
     const rawHtml = this.#htmlCallback(data, target);
@@ -305,6 +331,9 @@ export class TipVizTooltip extends HTMLElement {
     // 5. Reveal
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
+    this.#tooltipDiv.setAttribute("aria-hidden", "false");
+    this.setAttribute("aria-hidden", "false");
+    this.#setDescribedBy(target);
 
     // 6. Dispatch Event
     this.dispatchEvent(new CustomEvent("show", {
@@ -320,7 +349,54 @@ export class TipVizTooltip extends HTMLElement {
   public hide() {
     this.#tooltipDiv.style.opacity = "0";
     this.#tooltipDiv.style.pointerEvents = "none";
+    this.#tooltipDiv.setAttribute("aria-hidden", "true");
+    this.setAttribute("aria-hidden", "true");
+    this.#clearDescribedBy();
     this.dispatchEvent(new CustomEvent("hide", { bubbles: true, composed: true }));
+  }
+
+  #ensureAccessibleHostAttributes() {
+    this.setAttribute("role", "tooltip");
+    this.setAttribute("aria-hidden", this.#tooltipDiv.style.opacity === "1" ? "false" : "true");
+
+    if (this.id) {
+      return;
+    }
+
+    TipVizTooltip.#idCounter += 1;
+    this.id = `tip-viz-tooltip-${TipVizTooltip.#idCounter}`;
+  }
+
+  #setDescribedBy(target: Element) {
+    this.#clearDescribedBy();
+    this.#activeTarget = target;
+
+    if (!(target instanceof HTMLElement)) return;
+
+    const currentDescribedBy = target.getAttribute("aria-describedby") ?? "";
+    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
+    if (!ids.includes(this.id)) {
+      target.setAttribute("aria-describedby", [...ids, this.id].join(" "));
+    }
+  }
+
+  #clearDescribedBy() {
+    if (!(this.#activeTarget instanceof HTMLElement)) {
+      this.#activeTarget = null;
+      return;
+    }
+
+    const currentDescribedBy = this.#activeTarget.getAttribute("aria-describedby") ?? "";
+    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
+    const nextIds = ids.filter((id) => id !== this.id);
+
+    if (nextIds.length > 0) {
+      this.#activeTarget.setAttribute("aria-describedby", nextIds.join(" "));
+    } else {
+      this.#activeTarget.removeAttribute("aria-describedby");
+    }
+
+    this.#activeTarget = null;
   }
 
   /**

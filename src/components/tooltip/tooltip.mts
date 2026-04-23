@@ -280,10 +280,7 @@ export class TipVizTooltip extends HTMLElement {
     const safeHtml = this.#sanitizer(rawHtml);
     if (safeHtml !== this.#lastHtml) {
       this.#lastHtml = safeHtml;
-      const range = document.createRange();
-      const fragment = range.createContextualFragment(safeHtml);
-      this.#tooltipDiv.textContent = "";
-      this.#tooltipDiv.appendChild(fragment);
+      this.#tooltipDiv.innerHTML = safeHtml;
     }
 
     // 2. Determine Direction & Offset

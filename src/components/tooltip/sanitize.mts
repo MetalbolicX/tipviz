@@ -8,7 +8,9 @@
  * @example
  * const mySanitizer: SanitizerFn = (html) => sanitize(html);
  */
-export type SanitizerFn = (html: string) => string;
+import type { SanitizerFn } from "./types.mjs";
+
+export type { SanitizerFn };
 
 const DANGEROUS_ELEMENTS = new Set([
   "script",
@@ -69,8 +71,6 @@ const sanitizeAttribute = (name: string, value: string): string | null => {
  *   and attributes that can contain script payloads such as `srcdoc`).
  * - Rejects attribute values that use the `javascript:` scheme or
  *   `data:` URIs that are not images.
- * - Removes `href` on <a>/<area> and `src` on <img> when they use disallowed
- *   schemes.
  *
  * SECURITY: callers must treat the returned string as untrusted HTML only
  * suitable for innerHTML insertion after this transformation. This function
@@ -87,17 +87,16 @@ const sanitizeAttribute = (name: string, value: string): string | null => {
 export const sanitize: SanitizerFn = (html: string): string => {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  // Iterate elements inside the body only.
   const it = doc.createNodeIterator(doc.body, NodeFilter.SHOW_ELEMENT);
   let node: Element | null;
 
-  let removeQueue: Element[] = [];
+  const removeQueue: Element[] = [];
 
   while ((node = it.nextNode() as Element | null)) {
     const tagName = node.tagName.toLowerCase();
 
     if (DANGEROUS_ELEMENTS.has(tagName)) {
-      removeQueue = [...removeQueue, node];
+      removeQueue.push(node);
       continue;
     }
 
@@ -111,26 +110,6 @@ export const sanitize: SanitizerFn = (html: string): string => {
         node.removeAttribute(attrName);
       } else if (sanitized !== attrValue) {
         node.setAttribute(attrName, sanitized);
-      }
-    }
-
-    const tag = tagName;
-    if (tag === "a" || tag === "area") {
-      const href = node.getAttribute("href") ?? "";
-      const lowerHref = href.toLowerCase().trim();
-      if (
-        DANGEROUS_SCHEMES.test(lowerHref) ||
-        DANGEROUS_DATA_PATTERN.test(lowerHref)
-      ) {
-        node.removeAttribute("href");
-      }
-    }
-
-    if (tag === "img") {
-      const src = node.getAttribute("src") ?? "";
-      const lowerSrc = src.toLowerCase().trim();
-      if (DANGEROUS_SCHEMES.test(lowerSrc) || DANGEROUS_DATA_PATTERN.test(lowerSrc)) {
-        node.removeAttribute("src");
       }
     }
   }

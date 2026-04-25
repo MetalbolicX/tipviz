@@ -306,6 +306,7 @@ export class TipVizTooltip extends HTMLElement {
     const safeHtml = this.#sanitizer(rawHtml);
     if (safeHtml !== this.#lastHtml) {
       this.#lastHtml = safeHtml;
+      // eslint-disable-next-line no-restricted-properties
       this.#tooltipDiv.innerHTML = safeHtml;
     }
 

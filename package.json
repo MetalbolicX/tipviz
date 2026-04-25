@@ -56,9 +56,9 @@
     "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
     "jsdom": "^29.0.2",
-    "tsdown": "^0.21.9",
+    "tsdown": "^0.21.10",
     "typescript": "^6.0.3",
-    "vite": "^8.0.9",
+    "vite": "^8.0.10",
     "vitest": "^4.1.5"
   },
   "module": "./dist/index.mjs"

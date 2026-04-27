@@ -216,4 +216,57 @@ describe("sanitize", () => {
       expect(result).not.toContain("data:");
     });
   });
+
+  describe("style url() values are stripped", () => {
+    it("strips a single url() call", () => {
+      const result = sanitize('<div style="background: url(http://evil.com)">x</div>');
+      expect(result).toContain('style="background: url()"');
+      expect(result).not.toContain("evil.com");
+    });
+
+    it("strips quoted url() call values", () => {
+      const singleQuoted = sanitize("<div style=\"background: url('http://evil.com')\">x</div>");
+      const doubleQuoted = sanitize('<div style="background: url(&quot;http://evil.com&quot;)">x</div>');
+      expect(singleQuoted).toContain('style="background: url()"');
+      expect(doubleQuoted).toContain('style="background: url()"');
+    });
+
+    it("strips multiple url() calls", () => {
+      const result = sanitize('<div style="background: url(a), url(b)">x</div>');
+      expect(result).toContain('style="background: url(), url()"');
+    });
+
+    it("strips url() with surrounding whitespace", () => {
+      const result = sanitize('<div style="background: url( http://evil.com )">x</div>');
+      expect(result).toContain('style="background: url()"');
+      expect(result).not.toContain("evil.com");
+    });
+
+    it("strips filter url() values", () => {
+      const result = sanitize('<div style="filter: url(http://evil.com/filter.svg#x)">x</div>');
+      expect(result).toContain('style="filter: url()"');
+      expect(result).not.toContain("evil.com");
+    });
+
+    it("strips cursor url() while preserving fallback tokens", () => {
+      const result = sanitize('<div style="cursor: url(http://evil.com/cursor.cur), auto">x</div>');
+      expect(result).toContain('style="cursor: url(), auto"');
+      expect(result).not.toContain("evil.com");
+    });
+
+    it("strips data URI url() values inside style", () => {
+      const result = sanitize('<div style="background: url(data:image/svg+xml,<svg></svg>)">x</div>');
+      expect(result).toContain('style="background: url()">');
+    });
+
+    it("leaves style values without url() unchanged", () => {
+      const result = sanitize('<div style="color: red; padding: 8px; border-radius: 4px">x</div>');
+      expect(result).toContain('style="color: red; padding: 8px; border-radius: 4px"');
+    });
+
+    it("handles empty style attribute", () => {
+      const result = sanitize('<div style="">x</div>');
+      expect(result).toContain('style=""');
+    });
+  });
 });

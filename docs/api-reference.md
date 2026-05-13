@@ -35,11 +35,39 @@ const tooltip = document.getElementById('tooltip');
   loadStylesheet(url: string): void;
   ```
 
-- **`setHtml`**: Sets the callback used to render HTML content into the tooltip. When `show` is called the component sets the html content on the tooltip box using the returned string from this function.
+- **`setTemplate`**: Parses an HTML string and caches references to all elements with `[data-bind]` attributes for O(1) updates. The template is sanitized automatically before rendering.
 
     ```ts
-    setHtml(fn: HtmlCallback): void;
+    setTemplate(htmlString: string): void;
     ```
+
+    ```html
+    <!-- data-bind attributes act as placeholders for dynamic content -->
+    <tip-viz-tooltip id="tooltip"></tip-viz-tooltip>
+    <script>
+      tooltip.setTemplate(`
+        <div class="tooltip-content">
+          <strong data-bind="label"></strong>
+          <span data-bind="value"></span>
+        </div>
+      `);
+    </script>
+    ```
+
+- **`setData`**: Merges the provided data into the internal store and updates every `[data-bind]` element whose key matches. If no template has been set yet, the data is stored and applied immediately when `setTemplate()` is called later.
+
+    ```ts
+    setData(data: Record<string, string | number>): void;
+    ```
+
+    ```ts
+    tooltip.setTemplate(`<span data-bind="name"></span>`);
+    tooltip.setData({ name: "Alice", score: 42 });
+    // <span data-bind="name"> becomes "Alice"
+    // <span data-bind="score"> becomes "42"
+    ```
+
+    > [!Note] Missing keys in the template emit a `console.warn`. Call `setData()` and `show()` in any order — data is stored until a template is available.
 
 - **`setDirection`**: Sets the callback that determines the placement `Direction` for a given `data` and `target`.
 
@@ -59,27 +87,24 @@ const tooltip = document.getElementById('tooltip');
    setStyles(cssString: string): void;
    ```
 
-- **`setSanitizer`**: Sets a custom sanitizer function to override the default HTML sanitization. Pass `null` to disable sanitization (only for trusted HTML content). The default sanitizer removes dangerous elements, strips event handler attributes, blocks malicious URI schemes, and strips all `url()` calls from inline `style` attributes to prevent CSS-based data exfiltration.
+- **`setSanitizerConfig`**: Overrides the built-in `SanitizerConfig` object that controls which elements and attributes are removed during template sanitization. The default config removes dangerous elements (`<script>`, `<iframe>`, etc.) and strips event handler attributes (`on*`, `srcdoc`, `formaction`).
 
    ```ts
-   setSanitizer(fn: SanitizerFn | null): void;
+   setSanitizerConfig(config: SanitizerConfig): void;
    ```
 
-   Example with custom sanitizer:
-
    ```ts
-   import { sanitize } from "tipviz";
-
-   tooltip.setSanitizer((html) => {
-     // Apply your own sanitization logic
-     return sanitize(html);
+   // Allow <b> and <i> elements through
+   tooltip.setSanitizerConfig({
+     removeElements: ["script", "iframe"],
+     removeAttributes: [/^on\S+$/i, "srcdoc", "formaction"]
    });
    ```
 
-- **`show`**: Displays the tooltip with the provided `data` and positions it relative to the `target` element.
+- **`show`**: Positions the tooltip relative to the `target` element and reveals it. Data must be provided beforehand via `setData()`.
 
    ```ts
-   show(data: any, target: Element): void;
+   show(target: Element): void;
    ```
 
 - **`hide`**: Hides the tooltip and dispatches a bubbling, composed `hide` event.
@@ -144,7 +169,7 @@ await defineTooltip();
 
 - **`show`** — emitted when `show()` completes. `event.detail` contains:
   - `target`: the Element the tooltip was positioned against
-  - `data`: the data object passed to `show`
+  - `data`: the current data object (set via `setData()`)
   - `direction`: the resolved `Direction` string used for placement
   - `position`: `{ top, left }` numeric coordinates (before page scroll adjustments)
 
@@ -180,13 +205,16 @@ type Offset = [number, number]; // [x, y] — x is horizontal (added to left), y
 
 An array of pixel offsets applied to the computed `top` and `left` coordinates. `x` shifts horizontally, `y` shifts vertically.
 
-- **`HtmlCallback`**
+- **`SanitizerConfig`**
 
 ```ts
-type HtmlCallback = (...args: any[]) => string;
+type SanitizerConfig = {
+  removeElements: (string | RegExp)[];
+  removeAttributes: (string | RegExp)[];
+};
 ```
 
-Function that returns an HTML string which will be set as the tooltip content.
+Controls which elements and attributes are stripped during template sanitization.
 
 - **`OffsetCallback`**
 
@@ -235,29 +263,23 @@ No network request is made, and the browser silently ignores the invalid `url()`
 
 ### Custom Sanitization
 
-If you need different sanitization rules, override the sanitizer via `setSanitizer()`:
+If you need different sanitization rules, pass a custom `SanitizerConfig` via `setSanitizerConfig()`:
 
 ```ts
-import { sanitize } from "tipviz";
-
-tooltip.setSanitizer((html) => {
-  // Use the built-in sanitizer
-  const cleaned = sanitize(html);
-  // Apply additional transformations if needed
-  return cleaned;
+// Allow <b> and <i> through but keep default attribute stripping
+tooltip.setSanitizerConfig({
+  removeElements: ["script", "iframe", "object", "embed"],
+  removeAttributes: [/^on\S+$/i, "srcdoc", "formaction"]
 });
-
-// Or disable sanitization for trusted content only
-tooltip.setSanitizer(null); // Passes HTML through unchanged
 ```
 
 ### Untrusted Content Best Practices
 
-When using `setHtml()` with untrusted or user-supplied data:
+When using `setTemplate()` with untrusted or user-supplied template strings:
 
-1. Always use the default sanitizer or provide your own
-2. Avoid interpolating sensitive data (tokens, API keys) into tooltip content
-3. If you must display user data, escape or sanitize it before passing to `setHtml()`
+1. The built-in sanitizer runs automatically on every `setTemplate()` call
+2. Avoid interpolating sensitive data (tokens, API keys) into template strings
+3. Use `data-bind` placeholders instead of string interpolation for dynamic content
 4. Consider combining with a Content Security Policy (CSP) for defense-in-depth
 
 ---
@@ -267,27 +289,31 @@ When using `setHtml()` with untrusted or user-supplied data:
 ```js
 const tooltip = document.getElementById('tooltip');
 
-tooltip.setHtml((data) => `
+// 1. Define the template with data-bind placeholders
+tooltip.setTemplate(`
   <div class="tooltip-content">
-    <strong>${data.title}</strong>
-    <div>${data.value}</div>
+    <strong data-bind="title"></strong>
+    <div data-bind="value"></div>
   </div>
 `);
 
+// 2. Dynamic direction based on target position
 tooltip.setDirection((data, target) => {
   const rect = target.getBoundingClientRect();
-  // prefer showing above if there's room
   return rect.top > 200 ? 'n' : 's';
 });
 
-tooltip.setOffset(() => [0, 6]); // shift 6px down (y) from computed top
+// 3. Small offset so the tooltip doesn't sit directly on the target
+tooltip.setOffset(() => [0, 6]);
 
+// 4. Styles
 tooltip.setStyles(`
   .tipviz-tooltip { background: rgba(0,0,0,0.8); color: white; padding: 6px; border-radius: 4px; }
 `);
 
-// Show and hide
-tooltip.show({ title: 'Point A', value: 42 }, document.querySelector('#point-a'));
+// 5. Show — data is set separately from the target
+tooltip.setData({ title: 'Point A', value: 42 });
+tooltip.show(document.querySelector('#point-a'));
 // later
 tooltip.hide();
 ```

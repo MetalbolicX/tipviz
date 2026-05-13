@@ -47,8 +47,8 @@ Add an SVG element and the tooltip component to your HTML. The SVG will hold you
   circle.setAttribute("cy", "100");
   circle.setAttribute("r", "40");
   circle.setAttribute("fill", "steelblue");
-  // Set the tooltip's HTML content and styles
-  tooltip.setHtml(() => `<div class='tooltip-content'>Hello World</div>`);
+  // Set the tooltip's template and styles
+  tooltip.setTemplate(`<div class='tooltip-content'>Hello World</div>`);
   tooltip.setStyles(`
     .tooltip-content {
       background: #fff;
@@ -62,7 +62,7 @@ Add an SVG element and the tooltip component to your HTML. The SVG will hold you
 
   // Show the tooltip when the mouse enters the circle
   circle.addEventListener("mouseenter", (event) => {
-    tooltip.show({}, circle);
+    tooltip.show(circle);
   });
 
   // Hide the tooltip when the mouse leaves the circle
@@ -75,7 +75,7 @@ Add an SVG element and the tooltip component to your HTML. The SVG will hold you
 What’s Happening? 🤔
 
 - You create a circle in the SVG.
-- You set up the tooltip’s content and style.
+- You define the tooltip’s template and apply styles.
 - When you hover over the circle, the tooltip appears. When you move your mouse away, it disappears.
 
 With just a few lines of code and a CDN link, you can add beautiful, interactive tooltips to your SVG graphics using the TipVizTooltip web component! 🥳.
@@ -149,10 +149,10 @@ import type { TipVizTooltip } from "tipviz"; // provides TS types
 const svg = d3.select("#chart2");
 const tooltip = document.getElementById("tooltip2") as TipVizTooltip;
 
-// Provide HTML for the tooltip. The function receives the data you pass to `show()`.
-tooltip.setHtml(({ value }) => `
+// Provide a template with a data-bind placeholder for dynamic content
+tooltip.setTemplate(`
   <div class="tooltip-content">
-    <strong>${value}</strong>
+    <strong data-bind="value"></strong>
   </div>
 `);
 
@@ -177,15 +177,17 @@ svg.selectAll("circle")
   .attr("r", 12)
   .attr("fill", "orange")
   .on("mouseenter", (event, d) => {
-    // Pass the data object and the DOM element used for placement
-    tooltip.show(d, event.currentTarget as Element);
+    // Set data and show separately
+    tooltip.setData({ value: d.value });
+    tooltip.show(event.currentTarget as Element);
   })
   .on("mouseleave", () => tooltip.hide());
 ```
 
 Helpful tips from the API reference:
 - `import "tipviz"` registers the custom element so `document.getElementById()` returns a usable `TipVizTooltip` instance.
-- Use `tooltip.setHtml(fn)` to supply HTML; `fn` receives the data object you pass to `show()`.
+- Use `tooltip.setTemplate(html)` to define the tooltip HTML with `data-bind` placeholders for dynamic values.
+- Use `tooltip.setData(data)` to update bound elements; call `tooltip.show(target)` to position and reveal.
 - Use `tooltip.setOffset(fn)` and `tooltip.setDirection(fn)` to fine-tune placement behavior.
 - If you want scoped CSS inside the component, either set the `stylesheet` attribute on the element or call `tooltip.setStyles(cssString)` / `tooltip.loadStylesheet(url)`.
 

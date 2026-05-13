@@ -10,7 +10,7 @@ Add rich, interactive tooltips to D3 charts or any DOM element with a few lines 
 - **Shadow DOM encapsulation** — styles don't leak in or out
 - **Auto-positioning** — moves itself to `document.body` for correct scroll-aware placement
 - **Three styling modes** — `setStyles()`, `stylesheet` attribute, or CSS `::part()`
-- **Sanitized HTML** — uses `setHTML()` with fragment fallback; no raw `innerHTML`
+- **Template + data binding** — `setTemplate()` + `setData()` for O(1) DOM updates
 - **8 directional placements** — `n`, `s`, `e`, `w`, `nw`, `ne`, `sw`, `se`
 - **Typed API** — full TypeScript types included
 
@@ -45,7 +45,7 @@ npm i tipviz
 
 // 2. Configure
 const tooltip = document.getElementById("tooltip");
-tooltip.setHtml((data) => `<div>${data.label}: ${data.value}</div>`);
+tooltip.setTemplate(`<div data-bind="label"></div>`);
 tooltip.setDirection(() => "n");          // n | s | e | w | nw | ne | sw | se
 tooltip.setOffset(() => [0, 8]);        // [x, y] — x→left, y→top
 tooltip.setStyles(`
@@ -53,7 +53,10 @@ tooltip.setStyles(`
 `);
 
 // 3. Show / hide on interaction
-element.addEventListener("mouseenter", (e) => tooltip.show(someData, e.currentTarget));
+element.addEventListener("mouseenter", (e) => {
+  tooltip.setData({ label: "Hello World" });
+  tooltip.show(e.currentTarget);
+});
 element.addEventListener("mouseleave", () => tooltip.hide());
 ```
 
@@ -65,12 +68,14 @@ element.addEventListener("mouseleave", () => tooltip.hide());
 
 | Method | Description |
 |--------|-------------|
-| `setHtml(fn)` | Sets the HTML content callback `(data, target) => string` |
+| `setTemplate(html)` | Sets the HTML template with `[data-bind]` binding attributes |
+| `setData(data)` | Updates bound elements with matching `data-bind` keys |
 | `setDirection(fn)` | Sets the placement direction callback `(data, target) => Direction` |
 | `setOffset(fn)` | Sets the pixel offset callback `(data, target) => [x, y]` |
 | `setStyles(css)` | Injects CSS via `CSSStyleSheet` with `<style>` fallback |
 | `loadStylesheet(url)` | Loads an external stylesheet into the shadow root |
-| `show(data, target)` | Renders and positions the tooltip |
+| `setSanitizerConfig(config)` | Overrides the default sanitization config |
+| `show(target)` | Positions and reveals the tooltip |
 | `hide()` | Hides the tooltip |
 
 ### Attributes

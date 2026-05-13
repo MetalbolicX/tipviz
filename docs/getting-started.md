@@ -115,11 +115,11 @@ import type { TipVizTooltip } from "tipviz";
 
 const tooltip = document.getElementById("tooltip") as TipVizTooltip;
 
-// Set the HTML content returned by the callback
-tooltip.setHtml(({ label, value }) => `
+// Define the template with data-bind placeholders for dynamic content
+tooltip.setTemplate(`
   <div class="tip">
-    <strong>${label}</strong>
-    <span>${value}</span>
+    <strong data-bind="label"></strong>
+    <span data-bind="value"></span>
   </div>
 `);
 
@@ -138,7 +138,8 @@ tooltip.setStyles(`
 const circles = document.querySelectorAll("circle");
 circles.forEach(circle => {
   circle.addEventListener("mouseenter", (e) => {
-    tooltip.show({ label: "Point", value: 42 }, e.currentTarget as Element);
+    tooltip.setData({ label: "Point", value: 42 });
+    tooltip.show(e.currentTarget as Element);
   });
   circle.addEventListener("mouseleave", () => tooltip.hide());
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { TipVizTooltip, Direction, Offset, HtmlCallback, OffsetCallback, DirectionFn } from "../index.mjs";
+import { TipVizTooltip, Direction, Offset, OffsetCallback, DirectionFn } from "../index.mjs";
 import type { Direction as DirectionType } from "../components/tooltip/types.mjs";
 
 describe("integration: src/index.mts", () => {
@@ -16,8 +16,6 @@ describe("integration: src/index.mts", () => {
   });
 
   it("exports all types at the module level", () => {
-    // These are type-only exports, so we verify they don't break imports.
-    // Direction is the only value-exported type at runtime (a string union type).
     const _d: Direction = "n";
     const _o: Offset = [0, 0];
     expect(_d).toBe("n");
@@ -55,10 +53,12 @@ describe("integration: src/index.mts", () => {
     tooltip.remove();
   });
 
-  it("has all public methods available", () => {
+  it("has all public methods available (v3.0 API)", () => {
     const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
 
-    expect(typeof tooltip.setHtml).toBe("function");
+    expect(typeof tooltip.setTemplate).toBe("function");
+    expect(typeof tooltip.setData).toBe("function");
+    expect(typeof tooltip.setSanitizerConfig).toBe("function");
     expect(typeof tooltip.setStyles).toBe("function");
     expect(typeof tooltip.setDirection).toBe("function");
     expect(typeof tooltip.setOffset).toBe("function");
@@ -68,7 +68,6 @@ describe("integration: src/index.mts", () => {
   });
 
   it("registering twice does not throw", () => {
-    // The module guards against double registration.
     expect(() => {
       if (!customElements.get("tip-viz-tooltip")) {
         customElements.define("tip-viz-tooltip", TipVizTooltip);
@@ -102,7 +101,7 @@ describe("integration: src/index.mts", () => {
     document.body.textContent = "";
   });
 
-  it("can create and use a tooltip end-to-end", () => {
+  it("can create and use a tooltip end-to-end (v3.0 API)", () => {
     const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
     const target = document.createElement("div");
     document.body.append(tooltip, target);
@@ -118,9 +117,9 @@ describe("integration: src/index.mts", () => {
       width: 60, height: 20, toJSON: () => ({}),
     } as DOMRect);
 
-    tooltip.setHtml(() => "<strong>Integrated</strong>");
+    tooltip.setTemplate("<strong>Integrated</strong>");
     tooltip.setDirection(() => "s");
-    tooltip.show({}, target);
+    tooltip.show(target);
 
     expect(tooltipBox.querySelector("strong")?.textContent).toBe("Integrated");
     expect(tooltipBox.style.opacity).toBe("1");

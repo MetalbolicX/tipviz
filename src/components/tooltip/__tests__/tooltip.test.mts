@@ -80,67 +80,181 @@ describe("TipVizTooltip", () => {
     tooltip.loadStylesheet("/one.css");
     tooltip.loadStylesheet("/two.css");
 
-    const links = tooltip.shadowRoot?.querySelectorAll("link[data-tipviz-link]") ?? [];
+    const links = [...tooltip.shadowRoot?.querySelectorAll("link[data-tipviz-link]") ?? []];
     expect(links.length).toBe(1);
-    expect(links.item(0).getAttribute("href")).toBe("/two.css");
+    expect(links[0]?.getAttribute("href")).toBe("/two.css");
   });
 
-  it("renders html content on show", () => {
-    tooltip.setHtml(() => "<span class='value'>Hello</span>");
+  describe("setTemplate + setData (v3.0 API)", () => {
+    it("renders template content on show", () => {
+      tooltip.setTemplate("<span class='value'>Hello</span>");
 
-    tooltip.show({}, target);
+      tooltip.show(target);
 
-    const tooltipBox = getTooltipBox(tooltip);
-    const valueNode = tooltipBox.querySelector(".value");
-    expect(valueNode?.textContent).toBe("Hello");
-    expect(tooltipBox.style.opacity).toBe("1");
-    expect(tooltipBox.style.pointerEvents).toBe("all");
+      const tooltipBox = getTooltipBox(tooltip);
+      const valueNode = tooltipBox.querySelector(".value");
+      expect(valueNode?.textContent).toBe("Hello");
+      expect(tooltipBox.style.opacity).toBe("1");
+    });
+
+    it("updates bound elements when setData is called", () => {
+      tooltip.setTemplate("<span data-bind='name'></span>");
+      tooltip.setData({ name: "Alice" });
+
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const boundSpan = tooltipBox.querySelector("[data-bind='name']");
+      expect(boundSpan?.textContent).toBe("Alice");
+    });
+
+    it("updates bound elements when setData is called multiple times", () => {
+      tooltip.setTemplate("<span data-bind='x'></span><span data-bind='y'></span>");
+
+      tooltip.setData({ x: 10 });
+      tooltip.setData({ y: 20 });
+
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const xSpan = tooltipBox.querySelector("[data-bind='x']");
+      const ySpan = tooltipBox.querySelector("[data-bind='y']");
+      expect(xSpan?.textContent).toBe("10");
+      expect(ySpan?.textContent).toBe("20");
+    });
+
+    it("warns when setData key has no matching data-bind element", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      tooltip.setTemplate("<span data-bind='name'></span>");
+      tooltip.setData({ name: "Bob", extra: "ignored" });
+
+      expect(warnSpy).toHaveBeenCalledWith("[tip-viz-tooltip] No data-bind=\"extra\" found in template");
+
+      warnSpy.mockRestore();
+    });
+
+    it("applies data immediately when setTemplate is called after setData", () => {
+      tooltip.setData({ name: "Charlie" });
+      tooltip.setTemplate("<span data-bind='name'></span>");
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const boundSpan = tooltipBox.querySelector("[data-bind='name']");
+      expect(boundSpan?.textContent).toBe("Charlie");
+    });
+
+    it("skips re-parsing template when setData is called (no DOM re-creation)", () => {
+      tooltip.setTemplate("<span data-bind='value'>initial</span>");
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const firstSpan = tooltipBox.querySelector("[data-bind='value']");
+
+      tooltip.setData({ value: "updated" });
+
+      const secondSpan = tooltipBox.querySelector("[data-bind='value']");
+      expect(firstSpan).toBe(secondSpan); // Same node reference
+    });
+
+    it("supports multiple bound elements with the same data-bind key", () => {
+      tooltip.setTemplate("<span data-bind='label'></span><span data-bind='label'></span>");
+
+      tooltip.setData({ label: "same" });
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const spans = tooltipBox.querySelectorAll("[data-bind='label']");
+      expect(spans).toHaveLength(2);
+      expect(spans[0]?.textContent).toBe("same");
+      expect(spans[1]?.textContent).toBe("same");
+    });
+
+    it("uses custom sanitizer config to filter additional elements", () => {
+      tooltip.setSanitizerConfig({ removeElements: ["b", "i"] });
+      tooltip.setTemplate("<div><b>bold</b><i>italic</i><p>para</p></div>");
+
+      const tooltipBox = getTooltipBox(tooltip);
+      expect(tooltipBox.querySelector("b")).toBeNull();
+      expect(tooltipBox.querySelector("i")).toBeNull();
+      expect(tooltipBox.querySelector("p")).not.toBeNull();
+      expect(tooltipBox.querySelector("p")?.textContent).toBe("para");
+    });
+
+    it("uses custom sanitizer config to filter additional attributes", () => {
+      tooltip.setSanitizerConfig({ removeElements: [], removeAttributes: ["data-custom"] });
+      tooltip.setTemplate("<div data-custom='secret'><span>test</span></div>");
+
+      const tooltipBox = getTooltipBox(tooltip);
+      expect(tooltipBox.querySelector("div")?.getAttribute("data-custom")).toBeNull();
+      expect(tooltipBox.querySelector("div")?.getAttribute("data-custom")).toBeFalsy();
+    });
   });
 
-  it("skips re-rendering when html is unchanged between show calls", () => {
-    tooltip.setHtml(() => "<span class='value'>42</span>");
-    tooltip.show({}, target);
+  describe("static tooltip (no setData)", () => {
+    it("renders static template without setData", () => {
+      tooltip.setTemplate("<b>Static Content</b>");
+      tooltip.show(target);
 
-    const tooltipBox = getTooltipBox(tooltip);
-    const firstNode = tooltipBox.querySelector(".value");
+      const tooltipBox = getTooltipBox(tooltip);
+      expect(tooltipBox.querySelector("b")?.textContent).toBe("Static Content");
+    });
 
-    tooltip.show({}, target);
-    const secondNode = tooltipBox.querySelector(".value");
+    it("shows without template warning", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    expect(firstNode).toBe(secondNode);
+      tooltip.show(target);
+
+      expect(warnSpy).toHaveBeenCalledWith("[tip-viz-tooltip] No template set. Call setTemplate() first.");
+
+      warnSpy.mockRestore();
+    });
   });
 
   it("applies direction classes and removes previous direction class", () => {
+    tooltip.setTemplate("<span>content</span>");
     tooltip.setDirection(() => "n");
-    tooltip.show({}, target);
+    tooltip.show(target);
 
     const tooltipBox = getTooltipBox(tooltip);
     expect(tooltipBox.classList.contains("n")).toBe(true);
 
     tooltip.setDirection(() => "s");
-    tooltip.show({}, target);
+    tooltip.show(target);
 
     expect(tooltipBox.classList.contains("n")).toBe(false);
     expect(tooltipBox.classList.contains("s")).toBe(true);
   });
 
   it("keeps offset axes correct: x affects left, y affects top", () => {
+    tooltip.setTemplate("<span>content</span>");
     tooltip.setOffset(() => [12, 7]);
     tooltip.setDirection(() => "n");
 
-    tooltip.show({}, target);
+    tooltip.show(target);
 
     const tooltipBox = getTooltipBox(tooltip);
     expect(tooltipBox.style.top).toBe("97px");
     expect(tooltipBox.style.left).toBe("92px");
   });
 
+  it("passes stored data to direction callback", () => {
+    tooltip.setTemplate("<span>content</span>");
+    tooltip.setDirection((data) => (data["score"] as number) > 100 ? "n" : "s");
+    tooltip.setData({ score: 150 });
+
+    tooltip.show(target);
+
+    const tooltipBox = getTooltipBox(tooltip);
+    expect(tooltipBox.classList.contains("n")).toBe(true);
+  });
+
   it("dispatches a show event with detail payload", () => {
     const onShow = vi.fn();
     tooltip.addEventListener("show", onShow as EventListener);
-    tooltip.setDirection(() => "e");
+    tooltip.setTemplate("<span>test</span>");
+    tooltip.setData({ id: 42 });
 
-    tooltip.show({ id: 42 }, target);
+    tooltip.show(target);
 
     expect(onShow).toHaveBeenCalledTimes(1);
 
@@ -150,15 +264,16 @@ describe("TipVizTooltip", () => {
     expect(event.composed).toBe(true);
     expect(event.detail.target).toBe(target);
     expect(event.detail.data).toEqual({ id: 42 });
-    expect(event.detail.direction).toBe("e");
-    expect(event.detail.position).toEqual({ top: 115, left: 130 });
+    expect(event.detail.direction).toBe("n");
+    expect(event.detail.position).toEqual({ top: 90, left: 80 });
   });
 
   it("hides tooltip and dispatches hide event", () => {
     const onHide = vi.fn();
     tooltip.addEventListener("hide", onHide as EventListener);
 
-    tooltip.show({}, target);
+    tooltip.setTemplate("<span>content</span>");
+    tooltip.show(target);
     tooltip.hide();
 
     const tooltipBox = getTooltipBox(tooltip);
@@ -168,8 +283,8 @@ describe("TipVizTooltip", () => {
   });
 
   it("clears tooltip children on disconnectedCallback", () => {
-    tooltip.setHtml(() => "<span>cleanup</span>");
-    tooltip.show({}, target);
+    tooltip.setTemplate("<span>cleanup</span>");
+    tooltip.show(target);
 
     const tooltipBox = getTooltipBox(tooltip);
     expect(tooltipBox.childNodes.length).toBeGreaterThan(0);

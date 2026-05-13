@@ -1,14 +1,12 @@
-import { sanitize } from "./sanitize.mjs";
 import {
   Direction,
-  HtmlCallback,
   OffsetCallback,
   DirectionFn,
-  SanitizerFn,
   TooltipData,
 } from "./types.mjs";
 import {
-  DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION
+  DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION,
+  SANITIZER_CONFIG,
 } from "./constants.mjs";
 
 export class TipVizTooltip extends HTMLElement {
@@ -18,19 +16,23 @@ export class TipVizTooltip extends HTMLElement {
     return ["transition-duration", "stylesheet", "no-auto-reposition"];
   }
 
-  #htmlCallback: HtmlCallback = () => " ";
-  #lastHtml = "";
+  #boundElements: Map<string, HTMLElement[]> = new Map();
+  #data: Record<string, string | number> = {};
+  #sanitizerConfig: SanitizerConfig = SANITIZER_CONFIG;
+  #templateSet = false;
+  #templateApplied = false;
+  #templateHtml = "";
+
   #stylesText = "";
   #adoptedStylesheet: CSSStyleSheet | null = null;
   #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
   #offsetCallback: OffsetCallback = () => DEFAULT_OFFSET;
-  #sanitizer: SanitizerFn = sanitize;
   #activeTarget: Element | null = null;
 
   #shadow: ShadowRoot;
   #tooltipDiv: HTMLDivElement;
   #transitionDuration = DEFAULT_TRANSITION_DURATION;
-  #currentDirection: Direction | null = null; // Track the active direction for easy cleanup
+  #currentDirection: Direction | null = null;
 
   constructor() {
     super();
@@ -41,7 +43,6 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.setAttribute("role", "tooltip");
     this.#tooltipDiv.setAttribute("aria-hidden", "true");
 
-    // Base styles
     Object.assign(this.#tooltipDiv.style, {
       position: "absolute",
       top: "0px",
@@ -49,7 +50,7 @@ export class TipVizTooltip extends HTMLElement {
       opacity: "0",
       pointerEvents: "none",
       boxSizing: "border-box",
-      transition: `opacity ${this.#transitionDuration}ms`
+      transition: `opacity ${this.#transitionDuration}ms`,
     });
 
     this.#shadow.appendChild(this.#tooltipDiv);
@@ -85,11 +86,16 @@ export class TipVizTooltip extends HTMLElement {
     this.#removeInlineStyles();
     this.#removeAdoptedStylesheet();
 
+    this.#boundElements.clear();
+    this.#data = {};
+    this.#templateSet = false;
+    this.#templateApplied = false;
+    this.#templateHtml = "";
+
     for (const child of [...this.#tooltipDiv.childNodes]) {
       child.remove();
     }
 
-    this.#lastHtml = "";
     this.#stylesText = "";
     if (this.#currentDirection) {
       this.#tooltipDiv.classList.remove(this.#currentDirection);
@@ -97,13 +103,6 @@ export class TipVizTooltip extends HTMLElement {
     }
   }
 
-  /**
-   * Updates the CSS transition duration for the tooltip's opacity animation.
-   * @param duration - The transition duration as a string (in milliseconds).
-   * @remarks
-   * Parses the duration string to an integer and applies it to the tooltip element's
-   * transition style property for opacity changes.
-   */
   #updateTransitionDuration(duration: string) {
     const nextDuration = parseInt(duration, 10);
     if (!Number.isNaN(nextDuration)) {
@@ -113,14 +112,6 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
   }
 
-  /**
-   * Load or update a stylesheet link inside the component's shadow root.
-   * @param url - The stylesheet URL to load into the shadow root.
-   * @example
-   * ```typescript
-   * tooltip.loadStylesheet('https://example.com/tooltip-styles.css');
-   * ```
-   */
   public loadStylesheet(url: string) {
     this.#stylesText = "";
     this.#removeInlineStyles();
@@ -132,7 +123,7 @@ export class TipVizTooltip extends HTMLElement {
       return;
     }
 
-    let link = this.#shadow.querySelector<HTMLLinkElement>('link[data-tipviz-link]');
+    let link = this.#shadow.querySelector<HTMLLinkElement>("link[data-tipviz-link]");
     if (!link) {
       link = document.createElement("link");
       link.setAttribute("rel", "stylesheet");
@@ -146,91 +137,118 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   * Sets the HTML content callback for the tooltip.
-   * @param fn - A callback function that returns HTML content to be rendered in the tooltip
+   * Sets the HTML template for the tooltip.
+   * @param htmlString - The HTML string to use as the tooltip template.
+   *                      May contain data-bind attributes to bind data values.
+   * @remarks
+   * Parses the HTML using setHTMLUnsafe with a SanitizerConfig for security.
+   * Caches references to [data-bind] elements for O(1) updates on data changes.
+   * If data was set before the template, applies it immediately.
    * @example
    * ```typescript
-   * tooltip.setHtml(() => '<div class="custom-content">Hello World</div>');
+   * tooltip.setTemplate('<span data-bind="name"></span>');
    * ```
    */
-  public setHtml<TData extends TooltipData>(fn: HtmlCallback<TData>) {
-    this.#htmlCallback = fn as HtmlCallback;
+  public setTemplate(htmlString: string): void {
+    this.#templateHtml = htmlString;
+    this.#tooltipDiv.innerHTML = this.#sanitize(htmlString);
+    this.#cacheBoundElements();
+    this.#templateSet = true;
+    this.#templateApplied = true;
+
+    if (Object.keys(this.#data).length > 0) {
+      this.#applyDataToBoundElements();
+    }
   }
 
   /**
-   * Sets the callback function that determines the tooltip direction.
-   * @param fn - The direction callback function to be invoked for calculating tooltip placement
+   * Sets the data values for the tooltip template bindings.
+   * @param data - A record mapping binding keys to string | number values.
    * @remarks
-   * The provided callback should return a valid direction string ("n", "s", "e", "w", "nw", "ne", "sw", "se")
-   * based on the target element or data context. This direction will be used to position the tooltip accordingly.
+   * Updates the textContent of cached [data-bind] elements that match the data keys.
+   * If no template is set yet, stores the data and applies it when setTemplate is called.
+   * Emits a console.warn for keys that have no corresponding data-bind element.
    * @example
    * ```typescript
-   * tooltip.setDirection((target) => {
-   *   const rect = target.getBoundingClientRect();
-   *   return rect.top < window.innerHeight / 2 ? "s" : "n";
-   * });
+   * tooltip.setData({ name: "Alice", score: 42 });
    * ```
    */
+  public setData(data: Record<string, string | number>): void {
+    this.#data = { ...this.#data, ...data };
+
+    if (this.#templateSet) {
+      this.#applyDataToBoundElements();
+    }
+  }
+
+  /**
+   * Sets a custom SanitizerConfig for HTML sanitization.
+   * @param config - A SanitizerConfig object defining what elements/attributes to allow or remove.
+   * @remarks
+   * The default config removes dangerous elements (script, iframe, etc.) and event handler attributes.
+   * If a template has already been set, re-apply it with the new sanitizer config.
+   * @example
+   * ```typescript
+   * tooltip.setSanitizerConfig({ removeElements: ["script"] });
+   * ```
+   */
+  public setSanitizerConfig(config: SanitizerConfig): void {
+    this.#sanitizerConfig = config;
+
+    if (this.#templateSet && this.#templateHtml) {
+      this.#tooltipDiv.innerHTML = this.#sanitize(this.#templateHtml);
+      this.#cacheBoundElements();
+      if (Object.keys(this.#data).length > 0) {
+        this.#applyDataToBoundElements();
+      }
+    }
+  }
+
+  /**
+   * Caches references to DOM elements with data-bind attributes.
+   */
+  #cacheBoundElements(): void {
+    this.#boundElements.clear();
+
+    const nodes = this.#tooltipDiv.querySelectorAll<HTMLElement>("[data-bind]");
+
+    for (const node of nodes) {
+      const dataKey = node.dataset.bind;
+      if (dataKey) {
+        const existing = this.#boundElements.get(dataKey);
+        if (existing) {
+          existing.push(node);
+        } else {
+          this.#boundElements.set(dataKey, [node]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Applies stored data to cached bound elements.
+   */
+  #applyDataToBoundElements(): void {
+    for (const [key, value] of Object.entries(this.#data)) {
+      const elements = this.#boundElements.get(key);
+      if (elements) {
+        for (const el of elements) {
+          el.textContent = String(value);
+        }
+      } else {
+        console.warn(`[tip-viz-tooltip] No data-bind="${key}" found in template`);
+      }
+    }
+  }
+
   public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
     this.#directionCallback = fn as DirectionFn;
   }
 
-
-  /**
-   * Sets a callback function that will be invoked to calculate the tooltip offset.
-   * @param fn - A callback function that computes the offset for positioning the tooltip
-   * @remarks
-   * The provided callback should return an array of two numbers representing the horizontal (x) and vertical (y) offset in pixels.
-   * This offset will be applied to the tooltip's calculated position to allow for fine-tuning of its placement relative to the target element.
-   * @example
-   * ```typescript
-   * tooltip.setOffset((target) => {
-   *   return [10, 20]; // Example offset values
-   * });
-   * ```
-   */
   public setOffset<TData extends TooltipData>(fn: OffsetCallback<TData>) {
     this.#offsetCallback = fn as OffsetCallback;
   }
 
-  /**
-   * Sets a custom sanitizer function for HTML content.
-   * @param fn - A function that receives raw HTML and returns sanitized HTML.
-   *              Pass `null` to disable sanitization (trusted content only).
-   * @example
-   * ```typescript
-   * // Use default DOMPurify-like sanitizer
-   * tooltip.setSanitizer(null); // disable for trusted HTML
-   *
-   * // Use custom sanitizer
-   * tooltip.setSanitizer((html) => mySanitize(html));
-   * ```
-   */
-  public setSanitizer(fn: SanitizerFn | null) {
-    this.#sanitizer = fn ?? ((html: string) => html);
-  }
-
-  /**
-   * Sets custom CSS styles for the tooltip component.
-   * @description
-   * Attempts to use the modern CSSStyleSheet API with adoptedStyleSheets for better performance.
-   * Falls back to creating a `<style>` element if the modern API is not supported or fails.
-   * Removes any previously set tooltip styles before applying new ones to prevent duplicates.
-   * @param css - The CSS string to apply to the tooltip. Pass an empty string to remove all custom styles.
-   * @remarks
-   * - Uses the `data-tipviz` attribute to identify and manage tooltip-specific stylesheets.
-   * - The modern adoptedStyleSheets approach is preferred when available for better encapsulation.
-   * - Gracefully degrades to DOM-based style elements in browsers without CSSStyleSheet support.
-   * @example
-   * ```typescript
-   * tooltip.setStyles(`
-   *   .tipviz-tooltip {
-   *      background-color: rgba(0, 0, 0, 0.8);
-   *      color: white;
-   *  }
-   * `);
-   * ```
-   */
   public setStyles(css: string) {
     this.#stylesText = css;
 
@@ -270,83 +288,107 @@ export class TipVizTooltip extends HTMLElement {
     if (!this.#adoptedStylesheet) return;
     const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
     root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
-      (sheet) => sheet !== this.#adoptedStylesheet
+      (sheet) => sheet !== this.#adoptedStylesheet,
     );
     this.#adoptedStylesheet = null;
   }
 
+  #sanitize(html: string): string {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const it = doc.createNodeIterator(doc.body, NodeFilter.SHOW_ELEMENT);
+    let node: Element | null;
 
-  /**
-   * Displays a tooltip with the provided data positioned relative to the target element.
-   * @param data - An object containing the data to be rendered in the tooltip content
-   * @param target - The DOM element that the tooltip should be positioned relative to
-   * @remarks
-   * This method performs the following operations in sequence:
-   * - Updates the tooltip content using the HTML callback
-   * - Determines the tooltip direction and offset using registered callbacks
-   * - Applies appropriate CSS classes for styling based on direction
-   * - Calculates tooltip coordinates relative to the target element
-   * - Applies scroll offset adjustments (assumes tooltip is appended to document.body)
-   * - Makes the tooltip visible and interactive
-   * - Dispatches a custom "show" event with positioning and data details
-   * @note The tooltip's position calculation assumes the tooltip element is appended to `document.body`.
-   * Scroll position (window.scrollY/scrollX) is factored into the final coordinates.
-   * @example
-   * ```typescript
-   * const tooltip = new Tooltip();
-   * const targetElement = document.getElementById('my-element');
-   * tooltip.show({ message: 'Hello!' }, targetElement);
-   * ```
-   */
-  public show(data: TooltipData, target: Element) {
-    if (!target || !target.isConnected) return;
+    const removeQueue: Element[] = [];
 
-    // 1. Update Content (skip re-render when HTML is unchanged)
-    const rawHtml = this.#htmlCallback(data, target);
-    const safeHtml = this.#sanitizer(rawHtml);
-    if (safeHtml !== this.#lastHtml) {
-      this.#lastHtml = safeHtml;
-      // eslint-disable-next-line no-restricted-properties
-      this.#tooltipDiv.innerHTML = safeHtml;
+    const config = this.#sanitizerConfig;
+    const dangerousElements = new Set(config.removeElements ?? []);
+    const dangerousAttrRules = config.removeAttributes ?? [];
+
+    while ((node = it.nextNode() as Element | null)) {
+      const tagName = node.tagName.toLowerCase();
+
+      if (dangerousElements.has(tagName)) {
+        removeQueue.push(node);
+        continue;
+      }
+
+      const attrs = Array.from(node.attributes, ({ name }) => name);
+
+      for (const attrName of attrs) {
+        let shouldRemove = false;
+
+        for (const rule of dangerousAttrRules) {
+          if (typeof rule === "string" && attrName === rule) {
+            shouldRemove = true;
+            break;
+          }
+          if (rule instanceof RegExp && rule.test(attrName)) {
+            shouldRemove = true;
+            break;
+          }
+        }
+
+        if (shouldRemove) {
+          node.removeAttribute(attrName);
+        }
+      }
     }
 
-    // 2. Determine Direction & Offset
-    const dir = this.#directionCallback(data, target) as Direction;
-    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(data, target);
+    for (const el of removeQueue) {
+      el.remove();
+    }
 
-    // 3. Update Classes efficiently
+    return doc.body.innerHTML;
+  }
+
+  /**
+   * Displays the tooltip positioned relative to the target element.
+   * @param target - The DOM element that the tooltip should be positioned relative to
+   * @remarks
+   * If no template has been set, emits a console.warn and returns early.
+   * If the template was just set (or changed), applies the template with current data.
+   * Then calculates position using direction/offset callbacks and reveals the tooltip.
+   * @example
+   * ```typescript
+   * tooltip.setTemplate('<span data-bind="name"></span>');
+   * tooltip.setData({ name: "Alice" });
+   * tooltip.show(targetElement);
+   * ```
+   */
+  public show(target: Element): void {
+    if (!target || !target.isConnected) return;
+
+    if (!this.#templateSet) {
+      console.warn("[tip-viz-tooltip] No template set. Call setTemplate() first.");
+      return;
+    }
+
+    const dir = this.#directionCallback(this.#data as TooltipData, target) as Direction;
+    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(this.#data as TooltipData, target);
+
     if (this.#currentDirection && this.#currentDirection !== dir) {
       this.#tooltipDiv.classList.remove(this.#currentDirection);
     }
     this.#tooltipDiv.classList.add(dir);
     this.#currentDirection = dir;
 
-    // 4. Calculate and Apply Coordinates
     const coordinates = this.#getCoordinates(dir, target);
 
-    // Note: window.scrollY/scrollX assumes <tip-viz-tooltip> is appended to document.body
-    // offsetX (horizontal) → left, offsetY (vertical) → top
     this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
     this.#tooltipDiv.style.left = `${coordinates.left + offsetX + window.scrollX}px`;
 
-    // 5. Reveal
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
     this.#tooltipDiv.setAttribute("aria-hidden", "false");
     this.setAttribute("aria-hidden", "false");
     this.#setDescribedBy(target);
 
-    // 6. Dispatch Event
     this.dispatchEvent(new CustomEvent("show", {
-      detail: { target, data, direction: dir, position: coordinates },
-      bubbles: true, composed: true
+      detail: { target, data: this.#data, direction: dir, position: coordinates },
+      bubbles: true, composed: true,
     }));
   }
 
-  /**
-   * Hides the tooltip by setting its opacity to 0 and disabling pointer events.
-   * Dispatches a custom "hide" event that bubbles and is composed.
-   */
   public hide() {
     this.#tooltipDiv.style.opacity = "0";
     this.#tooltipDiv.style.pointerEvents = "none";
@@ -400,31 +442,12 @@ export class TipVizTooltip extends HTMLElement {
     this.#activeTarget = null;
   }
 
-  /**
-   * Calculates the position coordinates for a tooltip based on the specified direction.
-   * @param dir - The direction in which the tooltip should be positioned relative to the target element.
-   *              Supported directions: "n" (north), "s" (south), "e" (east), "w" (west),
-   *              "nw" (northwest), "ne" (northeast), "sw" (southwest), "se" (southeast).
-   * @param target - The DOM element that the tooltip is positioned relative to.
-   * @returns An object containing the calculated `top` and `left` coordinate values in pixels.
-   * @remarks
-   * This method triggers a synchronous layout recalculation to account for tooltip dimension changes
-   * that may have occurred from innerHTML updates. The positioning calculations account for both the
-   * target element's dimensions and the tooltip's dimensions to ensure proper alignment.
-   * @example
-   * ```ts
-   * const coords = tooltip.#getCoordinates("n", targetElement);
-   * // Returns: { top: 100, left: 250 }
-   * ```
-   */
   #getCoordinates(dir: Direction, target: Element): { top: number; left: number } {
     const rect = target.getBoundingClientRect();
 
-    // Getting this forces a synchronous layout, which is necessary because
-    // we just updated the tooltip content and need the new dynamic width/height.
+    // Forces synchronous layout recalc after template/data changes
     const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
 
-    // The math here remains unchanged, it was already accurate.
     switch (dir) {
       case "n": return { top: rect.top - tooltipRect.height, left: rect.left + rect.width / 2 - tooltipRect.width / 2 };
       case "s": return { top: rect.bottom, left: rect.left + rect.width / 2 - tooltipRect.width / 2 };

@@ -1,6 +1,6 @@
 {
   "name": "tipviz",
-  "version": "2.3.2",
+  "version": "3.0.0",
   "description": "Framework-agnostic a tooltip Web Components for modern web applications. Focused on data visualization.",
   "type": "module",
   "main": "./dist/index.umd.js",

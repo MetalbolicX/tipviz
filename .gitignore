@@ -158,3 +158,8 @@ dist
 
 # For elm language
 /elm-stuff
+
+CODEBUDDY.local.md
+.claude/settings.local.json
+.codebuddy/settings.local.json
+.qoder/settings.local.json

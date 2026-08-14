@@ -54,11 +54,13 @@ tests" claim in those files must be corrected.
 
 ## Measured Coverage Floor (Step 2 baseline)
 
-> Filled in after first `pnpm run test:cov` run on the characterization tests.
+> Baseline from `pnpm run test:cov` with existing tests + coverage config added.
 
-- Lines: [TO BE MEASURED]
-- Branches: [TO BE MEASURED]
-- Functions: [TO BE MEASURED]
+- Lines: 90.9% (≥90% threshold — passes)
+- Branches: 73.78% (≥73% threshold — passes; 90% would fail)
+- Functions: 93.54% (≥90% threshold — passes)
+
+Branches threshold set to 73 as the floor. Raise opportunistically in later PRs.
 
 ## Sanitizer Characterization Contract (Plan 002 inputs)
 

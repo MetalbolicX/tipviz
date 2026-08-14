@@ -122,14 +122,14 @@ describe("Sanitizer Characterization", () => {
   });
 
   describe("RED cases for Plan 002", () => {
-    it.skip("strips on* event-handler attributes by default", () => {
+    it("strips on* event-handler attributes by default", () => {
       // Plan 002 must implement stripping of on* attributes from all elements
       tooltip.setTemplate("<img src='x' onerror='alert(1)' alt='x'>");
       const tooltipBox = getTooltipBox(tooltip);
       expect(tooltipBox.querySelector("img")?.getAttribute("onerror")).toBeNull();
     });
 
-    it.skip("strips javascript: URLs from href by default", () => {
+    it("strips javascript: URLs from href by default", () => {
       // Plan 002 must implement javascript: URL stripping from href and similar attributes
       tooltip.setTemplate("<a href='javascript:alert(1)'>click</a>");
       const tooltipBox = getTooltipBox(tooltip);

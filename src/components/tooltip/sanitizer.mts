@@ -2,13 +2,13 @@ import { SANITIZER_CONFIG } from "./constants.mjs";
 
 // NOTE: This module uses `new DOMParser().parseFromString(...)` and reads
 // `doc.body.innerHTML` to perform HTML sanitization. The project's ESLint
-// config forbids `innerHTML` access globally (no-restricted-properties),
+// config forbids innerHTML access globally via no-restricted-properties,
 // which makes sense for sinks that inject markup into the DOM but it also
-// catches legitimate reads on a parsed Document. The two targeted
-// eslint-disable-next-line comments below are the only places we need to
-// bypass the rule; the rest of the file uses safe APIs (textContent, dataset,
-// createNodeIterator). A future lint-config tightening could keep these
-// exceptions scoped via overrides, but the current behavior is intentional.
+// catches legitimate reads on a parsed Document. The two scoped disable
+// directives further down are the only places we bypass the rule; the rest
+// of the file uses safe APIs (textContent, dataset, createNodeIterator). A
+// future lint-config tightening could keep these exceptions scoped via
+// overrides, but the current behavior is intentional.
 export function sanitizeHtml(html: string, config: SanitizerConfig): string {
   // eslint-disable-next-line no-restricted-properties
   const doc = new DOMParser().parseFromString(html, "text/html");

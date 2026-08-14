@@ -15,9 +15,11 @@
 
 **Direct execution** (mechanical cleanup), one category at a time, with a
 short commit per category so a bad change can be reverted in isolation. **No
-`eslint --fix` — ever.** Every change is by hand. This rule is non-negotiable
-because the prior `--fix` run destroyed the two documented disables in
-`src/components/tooltip/sanitizer.mts`.
+`eslint --fix` — ever. No exceptions, even with `--rule` scoping.** Every change is by hand. This rule is non-negotiable
+because the prior `--fix` runs (both unscoped and perfectionist-scoped) rewrote
+files that must remain byte-stable (`sanitizer.mts`'s documented disables, the
+`.d.ts` augmentation), and the prior unscoped `--fix` also destroyed those
+disables.
 
 This plan **supersedes** the "Step 3 fix violations" section of
 `plans/003-lint-toolchain-baseline.md` (the original was scoped at 3-5
@@ -145,7 +147,7 @@ started.
 
 All mechanical. Run `pnpm exec eslint src/ --rule '{"perfectionist/sort-objects":["error"]}'` etc. and fix the reported line:column entries by reordering keys, named imports, class members, union types, switch cases, object types, sets, interfaces, named exports.
 
-You MAY use `pnpm exec eslint src/ --fix --rule '{"perfectionist/sort-objects":["error"]}'` for the perfectionist rules specifically (the `--rule` filter scopes the fix to the rule). Verify after: `pnpm run lint 2>&1 | grep -c "perfectionist"` should drop to 0. If any perfectionist finding remains, fix by hand.
+You MAY NOT use `pnpm exec eslint src/ --fix --rule ...` even with a `--rule` scope. The previous attempt's scoped perfectionist `--fix` rewrote `src/components/tooltip/sanitizer.mts` and `src/types/sanitizer.d.ts` even when only perfectionist sub-rules were scoped. Hand-fix EVERY perfectionist finding by reading the lint output line:column and reordering the keys/members/imports yourself. Verify after: `pnpm run lint 2>&1 | grep -c "perfectionist"` should drop to 0.
 
 Commit: `style(perfectionist): reorder object/class/import/union members per natural order`
 
@@ -237,7 +239,7 @@ Commit: `docs(plans): mark 003 + 003b done — toolchain + backlog cleared`
 - Any violation requires modifying `eslint.config.mjs`, `package.json`, or removing/weakening one of the 2 documented `eslint-disable` comments in `sanitizer.mts`.
 - A fix would change observable behavior of `TipVizTooltip` — STOP and report (this plan is lint cleanup, not behavior change).
 - `pnpm test` drops below 57 passed at any commit.
-- `--fix` appears in any command in the working tree — STOP and revert that attempt.
+- `--fix` appears in any command in the working tree — STOP and revert that attempt. No exceptions, even with `--rule` scoping.
 - `pnpm run typecheck` exits non-zero.
 - New `eslint-disable` comment anywhere outside the 2 documented in `sanitizer.mts` — STOP and revert.
 

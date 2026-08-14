@@ -58,10 +58,14 @@ export default tseslint.config(
       ],
 
       // --- Naming Conventions ---
-      // Supports kebab-case and name.type.extension (e.g., user.route.ts)
+      // kebab-case basenames, with explicit allow-list for dotted-suffix
+      // patterns the original regex accepted (`*.test.mts`, `*.d.ts`).
       "unicorn/filename-case": [
         "error",
-        { regex: "^[a-z0-9-]+(\\.[a-z0-9-]+)*$" },
+        {
+          case: "kebabCase",
+          ignore: ["^.*\\.test\\.mts$", "^.*\\.d\\.ts$"],
+        },
       ],
 
       "@typescript-eslint/naming-convention": [

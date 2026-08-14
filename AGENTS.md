@@ -57,26 +57,29 @@ The component exposes a typed class `TipVizTooltip` auto-registered as `<tip-viz
 **Core lifecycle:**
 ```ts
 const tip = document.querySelector("tip-viz-tooltip") as TipVizTooltip;
-tip.setTemplate("<div [data-bind]=\"label\"></div>");  // template with binding placeholders
-tip.setData({ label: "My Label", value: 42 });        // data to interpolate into [data-bind] slots
-tip.setSanitizerConfig({ allowDataImages: true });     // optional sanitizer policy
+tip.setTemplate('<div data-bind="label"></div>');  // template with data-bind placeholders
+tip.setData({ label: "My Label", value: 42 });    // data to interpolate into data-bind slots
+tip.setSanitizerConfig({ allowDataImages: true }); // optional sanitizer policy
 ```
 
 **Callbacks (settable after construction):**
 ```ts
-tip.directionCallback = (el) => "top";
-tip.htmlCallback      = (data) => render(data);
-tip.showCallback      = (el, dir) => { /* custom show logic */ };
-tip.hideCallback      = (el) => { /* custom hide logic */ };
-tip.positionCallback  = (el, dir) => ({ x: 10, y: 20 });
+tip.setDirection<MyData>((data, target) => "top");  // n | s | e | w | nw | ne | sw | se
+tip.setOffset<MyData>((data, target) => [0, 8]);    // [x, y] — x→left, y→top
 ```
 
 **Other state:**
 ```ts
 tip.setStyles(".tip { color: red }");  // CSS string
-tip.loadStylesheet("https://example.com/tip.css");  // or via attribute
+tip.loadStylesheet("https://example.com/tip.css");  // or via the `stylesheet` attribute
 tip.show(targetEl);   // show tooltip anchored to targetEl
 tip.hide();           // hide tooltip
 ```
 
-**Breaking change vs pre-v3.0:** Pre-v3.0 (commit `e063a24`) used direct property assignment for `direction`, `html`, `show`, `hide`, and `position` callbacks. v3.0 replaced these with typed setter methods (`setDirectionCallback`, `setHtmlCallback`, etc.) and added `setTemplate`/`setData` for declarative data binding. Update pre-v3.0 consumers by replacing direct assignment with the corresponding setter method.
+**Breaking change vs pre-v3.0** (commit `e063a24`): pre-v3.0 exposed a
+`setHtml(html, callback)` pattern. v3.0 replaced it with declarative
+`setTemplate(html)` + `setData(record)` plus a `[data-bind]` binding model and
+an opt-in `setSanitizerConfig(config)`. The `setDirection`/`setOffset`
+callbacks existed before and after v3.0 and are unchanged. For pre-v3.0
+consumers: replace `setHtml(html, render)` with `setTemplate(html)` followed by
+`setData(record)` (or `setTemplate(html)` alone for static content).

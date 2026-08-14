@@ -143,7 +143,7 @@ export class TipVizTooltip extends HTMLElement {
    * @param htmlString - The HTML string to use as the tooltip template.
    *                      May contain data-bind attributes to bind data values.
    * @remarks
-   * Parses the HTML with DOMParser and sanitizes it via the internal #sanitize step
+   * Parses the HTML with DOMParser and sanitizes it via `sanitizeHtml`
    * (default config strips on* event handlers, dangerous elements, and unsafe URL schemes).
    * Caches references to [data-bind] elements for O(1) updates on data changes.
    * If data was set before the template, applies it immediately.

@@ -42,7 +42,8 @@ design or test.
 | 001  | Establish strict-TDD foundation (policy + test gate) | SDD + TDD | P1 | M | — | DONE |
 | 002  | Fix the sanitizer and correct its docs | strict TDD | P1 | S | 001 | DONE |
 | 002b | Add native-DOM-Sanitizer type augmentation | direct | P2 | XS | 002 | DONE |
-| 003  | Lint under TS 7 via TS6 compat alias + Biome parity pilot [plans/003-lint-toolchain-baseline.md] | direct | P1 | M | 001, 005 | TODO |
+| 003  | Lint under TS 7 via TS6 compat alias + Biome parity pilot [plans/003-lint-toolchain-baseline.md] | direct | P1 | M | 001, 005 | DONE |
+| 003b | Clear the lint backlog (no --fix) [plans/003b-lint-backlog.md] | direct | P1 | M | 003 | TODO |
 | 004  | Correct AGENTS.md to match v3.0 | direct | P2 | S | — | DONE |
 | 005  | Decompose the god class (sanitizer + positioner) [.sdd/changes/extract-sanitizer-positioner/] | SDD then TDD | P2 | M | 001, 002 (ideally 003) | DONE |
 

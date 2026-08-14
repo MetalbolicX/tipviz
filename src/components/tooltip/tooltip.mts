@@ -141,7 +141,8 @@ export class TipVizTooltip extends HTMLElement {
    * @param htmlString - The HTML string to use as the tooltip template.
    *                      May contain data-bind attributes to bind data values.
    * @remarks
-   * Parses the HTML using setHTMLUnsafe with a SanitizerConfig for security.
+   * Parses the HTML with DOMParser and sanitizes it via the internal #sanitize step
+   * (default config strips on* event handlers, dangerous elements, and unsafe URL schemes).
    * Caches references to [data-bind] elements for O(1) updates on data changes.
    * If data was set before the template, applies it immediately.
    * @example
@@ -185,7 +186,8 @@ export class TipVizTooltip extends HTMLElement {
    * Sets a custom SanitizerConfig for HTML sanitization.
    * @param config - A SanitizerConfig object defining what elements/attributes to allow or remove.
    * @remarks
-   * The default config removes dangerous elements (script, iframe, etc.) and event handler attributes.
+   * The default config removes dangerous elements (script, iframe, etc.), strips on* event
+   * handler attributes, and blocks javascript:/vbscript: URL schemes in href/src/poster/etc.
    * If a template has already been set, re-apply it with the new sanitizer config.
    * @example
    * ```typescript
@@ -314,6 +316,8 @@ export class TipVizTooltip extends HTMLElement {
 
       const attrs = Array.from(node.attributes, ({ name }) => name);
 
+      const urlAttrs = new Set(["href", "src", "xlink:href", "action", "formaction", "background", "poster"]);
+
       for (const attrName of attrs) {
         let shouldRemove = false;
 
@@ -325,6 +329,16 @@ export class TipVizTooltip extends HTMLElement {
           if (rule instanceof RegExp && rule.test(attrName)) {
             shouldRemove = true;
             break;
+          }
+        }
+
+        if (!shouldRemove && urlAttrs.has(attrName)) {
+          const value = node.getAttribute(attrName)?.trim().toLowerCase() ?? "";
+          if (value.startsWith("javascript:") || value.startsWith("vbscript:")) {
+            shouldRemove = true;
+          }
+          if (value.startsWith("data:") && !value.startsWith("data:image/")) {
+            shouldRemove = true;
           }
         }
 

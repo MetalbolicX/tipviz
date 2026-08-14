@@ -42,7 +42,7 @@ design or test.
 | 001  | Establish strict-TDD foundation (policy + test gate) | SDD + TDD | P1 | M | — | DONE |
 | 002  | Fix the sanitizer and correct its docs | strict TDD | P1 | S | 001 | DONE |
 | 002b | Add native-DOM-Sanitizer type augmentation | direct | P2 | XS | 002 | DONE |
-| 003  | Make the code obey its own lint rules | direct | P2 | S | 001 | TODO |
+| 003  | Lint under TS 7 via TS6 compat alias + Biome parity pilot [plans/003-lint-toolchain-baseline.md] | direct | P1 | M | 001, 005 | TODO |
 | 004  | Correct AGENTS.md to match v3.0 | direct | P2 | S | — | DONE |
 | 005  | Decompose the god class (sanitizer + positioner) [.sdd/changes/extract-sanitizer-positioner/] | SDD then TDD | P2 | M | 001, 002 (ideally 003) | DONE |
 
@@ -70,3 +70,18 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
   (it does in Plan 002, but for template HTML, not stylesheet URLs).
 - **Major-version dependency lag:** not assessed as actionable — TypeScript 7 /
   Vite 8 / Vitest 4 are current at the time of writing per `package.json`.
+
+## Discovered during execution
+
+- **Plan 003 rewritten (2026-08-14, at `e57af9c`)** — the original 003 file was
+  lost (plan files were never committed; only this README survived). The
+  rewrite supersedes the old "pin TypeScript to 5.x" approach with the official
+  TS7 side-by-side strategy: `tsc` stays TS7 via `@typescript/native`, while
+  the `typescript` name aliases to `@typescript/typescript6` so typescript-eslint
+  gets its JS compiler API (its peer range is `>=4.8.4 <6.1.0`; TS 7 ships no
+  JS API). Adds a non-blocking Biome 2.x parity pilot
+  (`plans/biome-parity-matrix.md`) per user decision — Biome parses TypeScript
+  itself and can lint TS7 directly, but its type-inference coverage is partial
+  (~75% of typescript-eslint for `noFloatingPromises` per Biome's own docs) and
+  it cannot map jsdoc/perfectionist/unicorn plugins 1:1, so it runs alongside
+  ESLint, ungated, while the parity matrix is built.

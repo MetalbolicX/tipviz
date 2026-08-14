@@ -8,6 +8,7 @@ import {
   DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION,
   SANITIZER_CONFIG,
 } from "./constants.mjs";
+import { sanitizeHtml } from "./sanitizer.mjs";
 
 export class TipVizTooltip extends HTMLElement {
   static #idCounter = 0;
@@ -152,7 +153,7 @@ export class TipVizTooltip extends HTMLElement {
    */
   public setTemplate(htmlString: string): void {
     this.#templateHtml = htmlString;
-    this.#tooltipDiv.innerHTML = this.#sanitize(htmlString);
+    this.#tooltipDiv.innerHTML = sanitizeHtml(htmlString, this.#sanitizerConfig);
     this.#cacheBoundElements();
     this.#templateSet = true;
     this.#templateApplied = true;
@@ -198,7 +199,7 @@ export class TipVizTooltip extends HTMLElement {
     this.#sanitizerConfig = config;
 
     if (this.#templateSet && this.#templateHtml) {
-      this.#tooltipDiv.innerHTML = this.#sanitize(this.#templateHtml);
+      this.#tooltipDiv.innerHTML = sanitizeHtml(this.#templateHtml, this.#sanitizerConfig);
       this.#cacheBoundElements();
       if (Object.keys(this.#data).length > 0) {
         this.#applyDataToBoundElements();
@@ -293,66 +294,6 @@ export class TipVizTooltip extends HTMLElement {
       (sheet) => sheet !== this.#adoptedStylesheet,
     );
     this.#adoptedStylesheet = null;
-  }
-
-  #sanitize(html: string): string {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    const it = doc.createNodeIterator(doc.body, NodeFilter.SHOW_ELEMENT);
-    let node: Element | null;
-
-    const removeQueue: Element[] = [];
-
-    const config = this.#sanitizerConfig;
-    const dangerousElements = new Set(config.removeElements ?? []);
-    const dangerousAttrRules = config.removeAttributes ?? [];
-
-    while ((node = it.nextNode() as Element | null)) {
-      const tagName = node.tagName.toLowerCase();
-
-      if (dangerousElements.has(tagName)) {
-        removeQueue.push(node);
-        continue;
-      }
-
-      const attrs = Array.from(node.attributes, ({ name }) => name);
-
-      const urlAttrs = new Set(["href", "src", "xlink:href", "action", "formaction", "background", "poster"]);
-
-      for (const attrName of attrs) {
-        let shouldRemove = false;
-
-        for (const rule of dangerousAttrRules) {
-          if (typeof rule === "string" && attrName === rule) {
-            shouldRemove = true;
-            break;
-          }
-          if (rule instanceof RegExp && rule.test(attrName)) {
-            shouldRemove = true;
-            break;
-          }
-        }
-
-        if (!shouldRemove && urlAttrs.has(attrName)) {
-          const value = node.getAttribute(attrName)?.trim().toLowerCase() ?? "";
-          if (value.startsWith("javascript:") || value.startsWith("vbscript:")) {
-            shouldRemove = true;
-          }
-          if (value.startsWith("data:") && !value.startsWith("data:image/")) {
-            shouldRemove = true;
-          }
-        }
-
-        if (shouldRemove) {
-          node.removeAttribute(attrName);
-        }
-      }
-    }
-
-    for (const el of removeQueue) {
-      el.remove();
-    }
-
-    return doc.body.innerHTML;
   }
 
   /**

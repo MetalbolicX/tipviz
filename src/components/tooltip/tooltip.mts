@@ -9,6 +9,7 @@ import {
   SANITIZER_CONFIG,
 } from "./constants.mjs";
 import { sanitizeHtml } from "./sanitizer.mjs";
+import { getCoordinates } from "./positioner.mjs";
 
 export class TipVizTooltip extends HTMLElement {
   static #idCounter = 0;
@@ -327,7 +328,11 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.classList.add(dir);
     this.#currentDirection = dir;
 
-    const coordinates = this.#getCoordinates(dir, target);
+    const targetRect = target.getBoundingClientRect();
+
+    // Forces synchronous layout recalc after template/data changes
+    const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
+    const coordinates = getCoordinates(dir, targetRect, tooltipRect);
 
     this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
     this.#tooltipDiv.style.left = `${coordinates.left + offsetX + window.scrollX}px`;
@@ -395,24 +400,5 @@ export class TipVizTooltip extends HTMLElement {
     }
 
     this.#activeTarget = null;
-  }
-
-  #getCoordinates(dir: Direction, target: Element): { top: number; left: number } {
-    const rect = target.getBoundingClientRect();
-
-    // Forces synchronous layout recalc after template/data changes
-    const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
-
-    switch (dir) {
-      case "n": return { top: rect.top - tooltipRect.height, left: rect.left + rect.width / 2 - tooltipRect.width / 2 };
-      case "s": return { top: rect.bottom, left: rect.left + rect.width / 2 - tooltipRect.width / 2 };
-      case "e": return { top: rect.top + rect.height / 2 - tooltipRect.height / 2, left: rect.right };
-      case "w": return { top: rect.top + rect.height / 2 - tooltipRect.height / 2, left: rect.left - tooltipRect.width };
-      case "nw": return { top: rect.top - tooltipRect.height, left: rect.left - tooltipRect.width };
-      case "ne": return { top: rect.top - tooltipRect.height, left: rect.right };
-      case "sw": return { top: rect.bottom, left: rect.left - tooltipRect.width };
-      case "se": return { top: rect.bottom, left: rect.right };
-      default: return { top: rect.top - tooltipRect.height, left: rect.left + rect.width / 2 - tooltipRect.width / 2 };
-    }
   }
 }

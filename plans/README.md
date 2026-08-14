@@ -44,7 +44,7 @@ design or test.
 | 002b | Add native-DOM-Sanitizer type augmentation | direct | P2 | XS | 002 | DONE |
 | 003  | Make the code obey its own lint rules | direct | P2 | S | 001 | TODO |
 | 004  | Correct AGENTS.md to match v3.0 | direct | P2 | S | — | DONE |
-| 005  | Decompose the god class (sanitizer + positioner) | SDD then TDD | P2 | M | 001, 002 (ideally 003) | TODO |
+| 005  | Decompose the god class (sanitizer + positioner) [.sdd/changes/extract-sanitizer-positioner/] | SDD then TDD | P2 | M | 001, 002 (ideally 003) | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 

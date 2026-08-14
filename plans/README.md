@@ -41,6 +41,7 @@ design or test.
 |------|-------|-----------|----------|--------|------------|--------|
 | 001  | Establish strict-TDD foundation (policy + test gate) | SDD + TDD | P1 | M | — | DONE |
 | 002  | Fix the sanitizer and correct its docs | strict TDD | P1 | S | 001 | DONE |
+| 002b | Add native-DOM-Sanitizer type augmentation | direct | P2 | XS | 002 | DONE |
 | 003  | Make the code obey its own lint rules | direct | P2 | S | 001 | TODO |
 | 004  | Correct AGENTS.md to match v3.0 | direct | P2 | S | — | TODO |
 | 005  | Decompose the god class (sanitizer + positioner) | SDD then TDD | P2 | M | 001, 002 (ideally 003) | TODO |

@@ -32,30 +32,30 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
     const urlAttrs = new Set(["action", "formaction", "href", "poster", "src", "xlink:href"]);
 
     for (const attrName of attrs) {
-      let mustRemove = false;
+      let shouldkill = false;
 
       for (const rule of dangerousAttrRules) {
         if (typeof rule === "string" && attrName === rule) {
-          mustRemove = true;
+          shouldkill = true;
           break;
         }
         if (rule instanceof RegExp && rule.test(attrName)) {
-          mustRemove = true;
+          shouldkill = true;
           break;
         }
       }
 
-      if (!mustRemove && urlAttrs.has(attrName)) {
+      if (!shouldkill && urlAttrs.has(attrName)) {
         const value = node.getAttribute(attrName)?.trim().toLowerCase() ?? "";
         if (value.startsWith("javascript:") || value.startsWith("vbscript:")) {
-          mustRemove = true;
+          shouldkill = true;
         }
         if (value.startsWith("data:") && !value.startsWith("data:image/")) {
-          mustRemove = true;
+          shouldkill = true;
         }
       }
 
-      if (mustRemove) {
+      if (shouldkill) {
         node.removeAttribute(attrName);
       }
     }

@@ -20,19 +20,6 @@ export class TipVizTooltip extends HTMLElement {
 
   static #idCounter = 0;
 
-  #activeTarget: Element | null = null;
-  #adoptedStylesheet: CSSStyleSheet | null = null;
-  #boundElements = new Map<string, HTMLElement[]>();
-  #currentDirection: Direction | null = null;
-  #data: Record<string, number | string> = {};
-  #sanitizerConfig: SanitizerConfig = sanitizerConfig;
-  #shadow: ShadowRoot;
-  #stylesText = "";
-  #templateHtml = "";
-  #templateSet = false;
-  #tooltipDiv: HTMLDivElement;
-  #transitionDuration = defaultTransitionDuration;
-
   constructor() {
     super();
     this.#shadow = this.attachShadow({ mode: "open" });
@@ -54,6 +41,21 @@ export class TipVizTooltip extends HTMLElement {
 
     this.#shadow.appendChild(this.#tooltipDiv);
   }
+
+  #activeTarget: Element | null = null;
+  #adoptedStylesheet: CSSStyleSheet | null = null;
+  #boundElements = new Map<string, HTMLElement[]>();
+  #currentDirection: Direction | null = null;
+  #data: Record<string, number | string> = {};
+  #sanitizerConfig: SanitizerConfig = sanitizerConfig;
+  #shadow: ShadowRoot;
+  #stylesText = "";
+  #templateHtml = "";
+  #templateSet = false;
+  #tooltipDiv: HTMLDivElement;
+  #transitionDuration = defaultTransitionDuration;
+  #directionCallback: DirectionFn = () => defaultDirection;
+  #offsetCallback: OffsetCallback = () => defaultOffset;
 
   public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "transition-duration" && newValue) {
@@ -100,9 +102,6 @@ export class TipVizTooltip extends HTMLElement {
       this.#currentDirection = null;
     }
   }
-
-  #directionCallback: DirectionFn = () => defaultDirection;
-  #offsetCallback: OffsetCallback = () => defaultOffset;
 
   public hide() {
     this.#tooltipDiv.style.opacity = "0";

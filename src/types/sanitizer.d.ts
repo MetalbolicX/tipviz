@@ -4,6 +4,16 @@
 export {};
 
 declare global {
+  interface HTMLElement {
+    setHTML(input: string, options?: SetHTMLOptions): void;
+  }
+
+  interface HTMLSanitizer {
+    setHTML(input: string, options?: SetHTMLOptions): void;
+  }
+
+  type Sanitizer = new (config?: SanitizerConfig) => Sanitizer;
+
   interface SanitizerConfig {
     allowAttributes?: Record<string, string[]>;
     allowComments?: boolean;
@@ -15,18 +25,7 @@ declare global {
     removeElements?: string[];
   }
 
-  interface HTMLSanitizer {
-    setHTML(input: string, options?: SetHTMLOptions): void;
-  }
-
-  interface HTMLElement extends HTMLSanitizer {}
-
   interface SetHTMLOptions {
     sanitizer?: Sanitizer;
-  }
-
-  class Sanitizer {
-    constructor(config?: SanitizerConfig);
-    static readonly _brand: unique symbol;
   }
 }

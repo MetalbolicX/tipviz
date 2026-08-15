@@ -127,6 +127,13 @@ never `package.json`, never `.github/workflows/ci.yml`, never `AGENTS.md`):
   - Rename `shouldRemove` to a name that satisfies naming-convention (e.g., `markRemove`). The current name is flagged because the boolean naming rule expects `is*`/`has*`/`can*`/`should*`/`will*`/`did*` prefix — and "shouldRemove" starts with `should` BUT the variable's mutation pattern doesn't match; rename to `markRemove` or `isRemovable` is simplest.
 - `src/types/sanitizer.d.ts` must stay byte-identical to commit `9413f8c`.
 - `package.json`, `pnpm-lock.yaml`, `.github/`, `AGENTS.md`, `plans/`.
+- `src/**/__tests__**/*.test.mts` MAY be modified to fix mechanical lint findings
+  (sort-objects, sort-imports, sort-named-imports, naming-convention camelCase
+  renames, unused-var drops, unnecessary-type-assertion drops, sort-union-types).
+  These are non-behavior stylistic reordering/renaming. **DO NOT** modify test
+  assertions, mock setup, or test logic. Every change must keep `pnpm test`
+  at 57 passed, 0 skipped. (79 of 160 reported errors are in test files; the
+  lint backlog cannot be cleared without touching them.)
 
 ## Git workflow
 

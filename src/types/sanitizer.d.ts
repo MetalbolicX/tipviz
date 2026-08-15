@@ -8,9 +8,9 @@ declare global {
     allowElements?: string[];
     blockElements?: string[];
     dropAttributes?: Record<string, string[]>;
+    allowComments?: boolean;
     removeAttributes?: string[];
     removeElements?: string[];
-    allowComments?: boolean;
     allowCustomElements?: boolean;
     allowAttributes?: Record<string, string[]>;
   }

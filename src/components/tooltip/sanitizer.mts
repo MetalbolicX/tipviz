@@ -14,8 +14,6 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
   const it = doc.createNodeIterator(doc.body, NodeFilter.SHOW_ELEMENT);
   let node: Element | null;
 
-  const removeQueue: Element[] = [];
-
   const dangerousElements = new Set(config.removeElements ?? []);
   const dangerousAttrRules = config.removeAttributes ?? [];
 
@@ -23,7 +21,7 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
     const tagName = node.tagName.toLowerCase();
 
     if (dangerousElements.has(tagName)) {
-      removeQueue.push(...[node]);
+      node.remove();
       continue;
     }
 
@@ -59,10 +57,6 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
         node.removeAttribute(attrName);
       }
     }
-  }
-
-  for (const el of removeQueue) {
-    el.remove();
   }
 
   // eslint-disable-next-line no-restricted-properties

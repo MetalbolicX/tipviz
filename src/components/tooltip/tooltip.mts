@@ -1,36 +1,33 @@
 import {
-  Direction,
-  DirectionFn,
-  OffsetCallback,
-  TooltipData,
-} from "./types.mjs";
-import {
   defaultDirection,
   defaultOffset,
   defaultTransitionDuration,
   sanitizerConfig,
 } from "./constants.mjs";
-import { sanitizeHtml } from "./sanitizer.mjs";
 import { getCoordinates } from "./positioner.mjs";
+import { sanitizeHtml } from "./sanitizer.mjs";
+import {
+  Direction,
+  DirectionFn,
+  OffsetCallback,
+  TooltipData,
+} from "./types.mjs";
 
 export class TipVizTooltip extends HTMLElement {
-  static #idCounter = 0;
-
   public static get observedAttributes() {
     return ["transition-duration", "stylesheet", "no-auto-reposition"];
   }
 
+  static #idCounter = 0;
+
   #activeTarget: Element | null = null;
   #adoptedStylesheet: CSSStyleSheet | null = null;
-  #boundElements: Map<string, HTMLElement[]> = new Map();
+  #boundElements = new Map<string, HTMLElement[]>();
   #currentDirection: Direction | null = null;
-  #data: Record<string, string | number> = {};
-  #directionCallback: DirectionFn = () => defaultDirection;
-  #offsetCallback: OffsetCallback = () => defaultOffset;
+  #data: Record<string, number | string> = {};
   #sanitizerConfig: SanitizerConfig = sanitizerConfig;
   #shadow: ShadowRoot;
   #stylesText = "";
-  #templateApplied = false;
   #templateHtml = "";
   #templateSet = false;
   #tooltipDiv: HTMLDivElement;
@@ -57,6 +54,9 @@ export class TipVizTooltip extends HTMLElement {
 
     this.#shadow.appendChild(this.#tooltipDiv);
   }
+
+  #directionCallback: DirectionFn = () => defaultDirection;
+  #offsetCallback: OffsetCallback = () => defaultOffset;
 
   public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "transition-duration" && newValue) {
@@ -90,7 +90,6 @@ export class TipVizTooltip extends HTMLElement {
 
     this.#boundElements.clear();
     this.#data = {};
-    this.#templateApplied = false;
     this.#templateHtml = "";
     this.#templateSet = false;
 
@@ -131,15 +130,16 @@ export class TipVizTooltip extends HTMLElement {
       link = document.createElement("link");
       link.setAttribute("data-tipviz-link", "");
       link.setAttribute("rel", "stylesheet");
+      const linkHref = link.href;
       link.addEventListener("error", () => {
-        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${String(link?.href ?? "")}`);
+        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${linkHref}`);
       });
       this.#shadow.insertBefore(link, this.#tooltipDiv);
     }
     link.href = stylesheetUrl;
   }
 
-  public setData(data: Record<string, string | number>): void {
+  public setData(data: Record<string, number | string>): void {
     this.#data = { ...this.#data, ...data };
 
     if (this.#templateSet) {
@@ -159,24 +159,27 @@ export class TipVizTooltip extends HTMLElement {
    * tooltip.setSanitizerConfig({ removeElements: ["script"] });
    * ```
    */
-  public setSanitizerConfig(config: SanitizerConfig): void {
-    this.#sanitizerConfig = config;
-
-    if (this.#templateSet && this.#templateHtml) {
-      this.#tooltipDiv.innerHTML = sanitizeHtml(this.#templateHtml, this.#sanitizerConfig);
-      this.#cacheBoundElements();
-      if (Object.keys(this.#data).length > 0) {
-        this.#applyDataToBoundElements();
-      }
-    }
-  }
-
-  public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
+   public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
     this.#directionCallback = fn as DirectionFn;
   }
 
   public setOffset<TData extends TooltipData>(fn: OffsetCallback<TData>) {
     this.#offsetCallback = fn as OffsetCallback;
+  }
+
+  public setSanitizerConfig(config: SanitizerConfig): void {
+    this.#sanitizerConfig = config;
+
+    if (this.#templateSet && this.#templateHtml) {
+      const fragment = document
+        .createRange()
+        .createContextualFragment(sanitizeHtml(this.#templateHtml, this.#sanitizerConfig));
+      this.#tooltipDiv.replaceChildren(...fragment.children);
+      this.#cacheBoundElements();
+      if (Object.keys(this.#data).length > 0) {
+        this.#applyDataToBoundElements();
+      }
+    }
   }
 
   public setStyles(css: string) {
@@ -220,9 +223,11 @@ export class TipVizTooltip extends HTMLElement {
    */
   public setTemplate(htmlString: string): void {
     this.#templateHtml = htmlString;
-    this.#tooltipDiv.innerHTML = sanitizeHtml(htmlString, this.#sanitizerConfig);
+    const fragment = document
+      .createRange()
+      .createContextualFragment(sanitizeHtml(htmlString, this.#sanitizerConfig));
+    this.#tooltipDiv.replaceChildren(...fragment.children);
     this.#cacheBoundElements();
-    this.#templateApplied = true;
     this.#templateSet = true;
 
     if (Object.keys(this.#data).length > 0) {
@@ -245,7 +250,7 @@ export class TipVizTooltip extends HTMLElement {
    * ```
    */
   public show(target: Element): void {
-    if (!target?.isConnected) return;
+    if (!target.isConnected) return;
 
     if (!this.#templateSet) {
       console.warn("[tip-viz-tooltip] No template set. Call setTemplate() first.");
@@ -306,7 +311,7 @@ export class TipVizTooltip extends HTMLElement {
       if (dataKey) {
         const existing = this.#boundElements.get(dataKey);
         if (existing) {
-          existing.push(...[node]);
+          this.#boundElements.set(dataKey, [...existing, node]);
         } else {
           this.#boundElements.set(dataKey, [node]);
         }

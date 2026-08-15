@@ -12,10 +12,10 @@ pnpm run dev          # vite dev server (index.html + examples/)
 pnpm run build        # vite build (docs/examples, NOT the library)
 pnpm run tsdown:build # library build — outputs dist/ (cjs, es, umd, dts)
 pnpm run docs         # docsify dev server for docs/
-pnpm test             # vitest — unit + characterization tests (~54 passing)
-pnpm run typecheck    # tsc --noEmit
+pnpm test             # vitest — unit + characterization tests (~57 passing)
+pnpm run typecheck    # tsc --noEmit (TS 7)
 pnpm run test:cov     # vitest --coverage
-pnpm run lint         # eslint src/ (currently crashes — TS 7.0 / eslint incompatibility; see Quirks)
+pnpm run lint         # eslint src/ (see Quirks for dual-tsc setup)
 ```
 
 Use `pnpm run tsdown:build` when you need the distributable library. `pnpm run build` builds the demo/docs page.
@@ -38,8 +38,8 @@ Use `pnpm run tsdown:build` when you need the distributable library. `pnpm run b
 - **Two build tools, two purposes:** `vite` for dev/docs, `tsdown` for the distributable library. Don't confuse them.
 - **`.mts` extension matters.** tsdown config has `fixedExtension: true` and the entry is `./src/index.mts`. Library source files should use `.mts`.
 - **Tests exist.** Characterization and unit tests live in `src/components/tooltip/__tests__/` and `src/__tests__/`. Run with `pnpm test`. Integration tests in `src/__tests__/`. Coverage gate: lines 90 %, branches 73 %, functions 90 %.
-- **innerHTML and the sanitizer.** Modern browsers use native `element.setHTML(html, { sanitizer })`. For jsdom and older browsers the hand-rolled `#sanitizeFallback` uses `innerHTML`. The ESLint `no-restricted-properties` rule forbids `innerHTML` globally; the component uses an eslint-disable comment for the fallback path. Lint cleanup (Plan 003) is in progress.
-- **pnpm run lint crashes.** TypeScript 7.0 and the current eslint-config are incompatible — `parserServices` is undefined in the type checker pass. This is a known issue tracked separately; do not attempt to fix in other plans.
+- **Sanitizer internals.** The component delegates sanitization to `sanitizeHtml(html, config)` in `src/components/tooltip/sanitizer.mts`. For DOMParser + `doc.body.innerHTML` reads (a read of a parsed Document, not a sink write), the file carries exactly one scoped `eslint-disable-next-line no-restricted-properties` — do not remove it. The `no-restricted-properties` rule forbids innerHTML globally because it makes sense for sinks; the sanitizer needs the read.
+- **Lint runs under a dual-tsc setup.** TypeScript 7.0 ships a Go-native compiler with no JavaScript API, but `typescript-eslint@8.x` needs that API (peer range `>=4.8.4 <6.1.0`). To keep both working, `package.json` aliases the `typescript` name to `@typescript/typescript6@^6.0.2` (used by ESLint's parser) while `@typescript/native: npm:typescript@^7.0.2` provides the `tsc` binary that runs typecheck and the build. `pnpm exec tsc --version` reports 7.x; `pnpm exec tsc6 --version` reports 6.x.
 - **Position assumes body.** The tooltip calculates position using `window.scrollY/scrollX`, so it expects to be appended to `document.body`.
 - **Styles applied three ways:** `setStyles(css)`, `loadStylesheet(url)` attribute, or the `stylesheet` HTML attribute. Uses `CSSStyleSheet.replaceSync` with a fallback to `<style>` injection.
 

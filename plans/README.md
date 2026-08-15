@@ -72,6 +72,12 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
 - **Major-version dependency lag:** not assessed as actionable — TypeScript 7 /
   Vite 8 / Vitest 4 are current at the time of writing per `package.json`.
 
+## Plan 003b status
+
+| Plan | Status | Notes |
+|------|--------|-------|
+| 003b lint-backlog | **DONE** | Branch `advisor/003-lint-baseline` — 6 of 7 fix commits applied. Remaining: `no-restricted-properties` (innerHTML in tooltip.mts, 2 errors), `no-empty-object-type` (types.mts, sanitizer.d.ts), `no-extraneous-class` (sanitizer.d.ts), sort-objects in test mocks. Tests: 57 passed, 0 skipped. Typecheck: exit 0. |
+
 ## Discovered during execution
 
 - **Plan 003 rewritten (2026-08-14, at `e57af9c`)** — the original 003 file was

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tip-viz-tooltip e2e harness</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: system-ui, sans-serif;
+      background: #f0f0f0;
+    }
+
+    /* Page-level ::part rule — should win over structural sheet (no background set) */
+    tip-viz-tooltip::part(tooltip-box) {
+      background: rgb(12, 34, 56);
+    }
+
+    .target {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #fff;
+      border: 1px solid #ccc;
+      cursor: default;
+      margin: 20px;
+    }
+
+    #target-iframe-adoption {
+      position: absolute;
+      top: 200px;
+      left: 40px;
+    }
+
+    #target-transition {
+      position: absolute;
+      top: 400px;
+      left: 40px;
+    }
+
+    iframe {
+      display: block;
+      width: 300px;
+      height: 200px;
+      border: 1px solid #999;
+    }
+  </style>
+</head>
+<body>
+  <!-- Target for ::part cascade test -->
+  <div class="target" id="target-part">Hover me (::part test)</div>
+
+  <!-- Target and iframe for adoption test -->
+  <div class="target" id="target-iframe-adoption">Hover me (iframe adoption)</div>
+  <iframe id="adoption-frame" title="iframe adoption test"></iframe>
+
+  <!-- Target for transition-duration test -->
+  <div class="target" id="target-transition">Hover me (transition-duration)</div>
+
+  <!--
+   tip-viz-tooltip custom element is registered when the ESM bundle is loaded.
+    All actual test scenarios are driven by playwright-cli eval — this page is
+    intentionally free of scenario JS.
+  -->
+  <script type="module" src="../../dist/index.mjs"></script>
+</body>
+</html>

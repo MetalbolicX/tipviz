@@ -117,7 +117,10 @@ describe("integration: src/index.mts", () => {
       y: 100,
     });
 
-    const tooltipBox = tooltip.shadowRoot!.querySelector<HTMLDivElement>(".tipviz-tooltip") as HTMLDivElement;
+    const sr = tooltip.shadowRoot;
+    if (!sr) throw new Error("expected shadow root");
+    const tooltipBox = sr.querySelector<HTMLDivElement>(".tipviz-tooltip");
+    if (!tooltipBox) throw new Error("expected tooltip box");
     vi.spyOn(tooltipBox, "getBoundingClientRect").mockReturnValue({
       bottom: 20,
       height: 20,

@@ -46,6 +46,10 @@ design or test.
 | 003b | Clear the lint backlog (no --fix) [plans/003b-lint-backlog.md] | direct | P1 | M | 003 | DONE |
 | 004  | Correct AGENTS.md to match v3.0 | direct | P2 | S | — | DONE |
 | 005  | Decompose the god class (sanitizer + positioner) [.sdd/changes/extract-sanitizer-positioner/] | SDD then TDD | P2 | M | 001, 002 (ideally 003) | DONE |
+| 006  | Fix cross-document adoption state loss [plans/006-fix-adoption-state-loss.md] | strict TDD | P1 | M | — | DONE |
+| 007  | Close adoption test gaps [plans/007-close-adoption-test-gaps.md] | direct | P1 | S/M | 006 | DONE |
+| 008  | Browser e2e harness for ::part, adoption, and CSS variables [plans/008-browser-e2e-harness.md] | direct | P2 | M | 006 | TODO |
+| 009  | Polish tooltip internals [plans/009-polish-tooltip-internals.md] | direct | P2 | S/M | 006 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 

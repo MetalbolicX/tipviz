@@ -245,7 +245,7 @@ export class TipVizTooltip extends HTMLElement {
    * ```
    */
   public show(target: Element): void {
-    if (!target || !target.isConnected) return;
+    if (!target?.isConnected) return;
 
     if (!this.#templateSet) {
       console.warn("[tip-viz-tooltip] No template set. Call setTemplate() first.");
@@ -253,7 +253,7 @@ export class TipVizTooltip extends HTMLElement {
     }
 
     const dir = this.#directionCallback(this.#data, target);
-    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(this.#data, target);
+    const [offsetX, offsetY] = this.#offsetCallback(this.#data, target);
 
     if (this.#currentDirection && this.#currentDirection !== dir) {
       this.#tooltipDiv.classList.remove(this.#currentDirection);

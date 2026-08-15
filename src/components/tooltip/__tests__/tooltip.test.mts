@@ -239,7 +239,7 @@ describe("TipVizTooltip", () => {
 
   it("passes stored data to direction callback", () => {
     tooltip.setTemplate("<span>content</span>");
-    tooltip.setDirection((data) => (data["score"] as number) > 100 ? "n" : "s");
+    tooltip.setDirection((data) => (data.score as number) > 100 ? "n" : "s");
     tooltip.setData({ score: 150 });
 
     tooltip.show(target);
@@ -258,7 +258,7 @@ describe("TipVizTooltip", () => {
 
     expect(onShow).toHaveBeenCalledTimes(1);
 
-    const event = onShow.mock.calls.at(0)?.at(0) as CustomEvent;
+    const event = onShow.mock.calls.at(0)?.at(0) as CustomEvent<{target: Element, data: Record<string, string | number>, direction: string, position: {top: number, left: number}}>;
     expect(event.type).toBe("show");
     expect(event.bubbles).toBe(true);
     expect(event.composed).toBe(true);

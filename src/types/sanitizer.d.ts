@@ -5,22 +5,14 @@ export {};
 
 declare global {
   interface SanitizerConfig {
+    allowAttributes?: Record<string, string[]>;
+    allowComments?: boolean;
+    allowCustomElements?: boolean;
     allowElements?: string[];
     blockElements?: string[];
     dropAttributes?: Record<string, string[]>;
-    allowComments?: boolean;
     removeAttributes?: string[];
     removeElements?: string[];
-    allowCustomElements?: boolean;
-    allowAttributes?: Record<string, string[]>;
-  }
-
-  class Sanitizer {
-    constructor(config?: SanitizerConfig);
-  }
-
-  interface SetHTMLOptions {
-    sanitizer?: Sanitizer;
   }
 
   interface HTMLSanitizer {
@@ -28,4 +20,13 @@ declare global {
   }
 
   interface HTMLElement extends HTMLSanitizer {}
+
+  interface SetHTMLOptions {
+    sanitizer?: Sanitizer;
+  }
+
+  class Sanitizer {
+    constructor(config?: SanitizerConfig);
+    static readonly _brand: unique symbol;
+  }
 }

@@ -79,9 +79,6 @@ export class TipVizTooltip extends HTMLElement {
     if (stylesheet) this.loadStylesheet(stylesheet);
   }
 
-  #directionCallback: DirectionFn = () => defaultDirection;
-  #offsetCallback: OffsetCallback = () => defaultOffset;
-
   public disconnectedCallback() {
     this.#clearDescribedBy();
     this.#removeAdoptedStylesheet();
@@ -103,6 +100,9 @@ export class TipVizTooltip extends HTMLElement {
       this.#currentDirection = null;
     }
   }
+
+  #directionCallback: DirectionFn = () => defaultDirection;
+  #offsetCallback: OffsetCallback = () => defaultOffset;
 
   public hide() {
     this.#tooltipDiv.style.opacity = "0";

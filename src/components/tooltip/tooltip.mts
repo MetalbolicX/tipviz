@@ -1,12 +1,14 @@
 import {
   Direction,
-  OffsetCallback,
   DirectionFn,
+  OffsetCallback,
   TooltipData,
 } from "./types.mjs";
 import {
-  DEFAULT_DIRECTION, DEFAULT_OFFSET, DEFAULT_TRANSITION_DURATION,
-  SANITIZER_CONFIG,
+  defaultDirection,
+  defaultOffset,
+  defaultTransitionDuration,
+  sanitizerConfig,
 } from "./constants.mjs";
 import { sanitizeHtml } from "./sanitizer.mjs";
 import { getCoordinates } from "./positioner.mjs";
@@ -18,44 +20,52 @@ export class TipVizTooltip extends HTMLElement {
     return ["transition-duration", "stylesheet", "no-auto-reposition"];
   }
 
+  #activeTarget: Element | null = null;
+  #adoptedStylesheet: CSSStyleSheet | null = null;
   #boundElements: Map<string, HTMLElement[]> = new Map();
+  #currentDirection: Direction | null = null;
   #data: Record<string, string | number> = {};
-  #sanitizerConfig: SanitizerConfig = SANITIZER_CONFIG;
-  #templateSet = false;
+  #directionCallback: DirectionFn = () => defaultDirection;
+  #offsetCallback: OffsetCallback = () => defaultOffset;
+  #sanitizerConfig: SanitizerConfig = sanitizerConfig;
+  #shadow: ShadowRoot;
+  #stylesText = "";
   #templateApplied = false;
   #templateHtml = "";
-
-  #stylesText = "";
-  #adoptedStylesheet: CSSStyleSheet | null = null;
-  #directionCallback: DirectionFn = () => DEFAULT_DIRECTION;
-  #offsetCallback: OffsetCallback = () => DEFAULT_OFFSET;
-  #activeTarget: Element | null = null;
-
-  #shadow: ShadowRoot;
+  #templateSet = false;
   #tooltipDiv: HTMLDivElement;
-  #transitionDuration = DEFAULT_TRANSITION_DURATION;
-  #currentDirection: Direction | null = null;
+  #transitionDuration = defaultTransitionDuration;
 
   constructor() {
     super();
     this.#shadow = this.attachShadow({ mode: "open" });
     this.#tooltipDiv = document.createElement("div");
     this.#tooltipDiv.className = "tipviz-tooltip";
+    this.#tooltipDiv.setAttribute("aria-hidden", "true");
     this.#tooltipDiv.setAttribute("part", "tooltip-box");
     this.#tooltipDiv.setAttribute("role", "tooltip");
-    this.#tooltipDiv.setAttribute("aria-hidden", "true");
 
     Object.assign(this.#tooltipDiv.style, {
-      position: "absolute",
-      top: "0px",
+      boxSizing: "border-box",
       left: "0px",
       opacity: "0",
       pointerEvents: "none",
-      boxSizing: "border-box",
+      position: "absolute",
+      top: "0px",
       transition: `opacity ${this.#transitionDuration}ms`,
     });
 
     this.#shadow.appendChild(this.#tooltipDiv);
+  }
+
+  public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
+    if (name === "transition-duration" && newValue) {
+      this.#updateTransitionDuration(newValue);
+    }
+
+    if (name === "stylesheet" && newValue) {
+      this.loadStylesheet(newValue);
+    }
   }
 
   public connectedCallback() {
@@ -72,27 +82,17 @@ export class TipVizTooltip extends HTMLElement {
     if (stylesheet) this.loadStylesheet(stylesheet);
   }
 
-  public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
-    if (name === "transition-duration" && newValue) {
-      this.#updateTransitionDuration(newValue);
-    }
-
-    if (name === "stylesheet" && newValue) {
-      this.loadStylesheet(newValue);
-    }
-  }
-
   public disconnectedCallback() {
     this.#clearDescribedBy();
-    this.#removeStylesheetLink();
-    this.#removeInlineStyles();
     this.#removeAdoptedStylesheet();
+    this.#removeInlineStyles();
+    this.#removeStylesheetLink();
 
     this.#boundElements.clear();
     this.#data = {};
-    this.#templateSet = false;
     this.#templateApplied = false;
     this.#templateHtml = "";
+    this.#templateSet = false;
 
     for (const child of [...this.#tooltipDiv.childNodes]) {
       child.remove();
@@ -105,19 +105,20 @@ export class TipVizTooltip extends HTMLElement {
     }
   }
 
-  #updateTransitionDuration(duration: string) {
-    const nextDuration = parseInt(duration, 10);
-    if (!Number.isNaN(nextDuration)) {
-      this.#transitionDuration = nextDuration;
-    }
-
-    this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
+  public hide() {
+    this.#tooltipDiv.style.opacity = "0";
+    this.#tooltipDiv.style.pointerEvents = "none";
+    this.#tooltipDiv.setAttribute("aria-hidden", "true");
+    this.setAttribute("aria-hidden", "true");
+    this.#clearDescribedBy();
+    this.dispatchEvent(new CustomEvent("hide", { bubbles: true, composed: true }));
   }
 
   public loadStylesheet(url: string) {
     this.#stylesText = "";
-    this.#removeInlineStyles();
     this.#removeAdoptedStylesheet();
+    this.#removeInlineStyles();
+    this.#removeStylesheetLink();
 
     const stylesheetUrl = url.trim();
     if (!stylesheetUrl) {
@@ -128,8 +129,8 @@ export class TipVizTooltip extends HTMLElement {
     let link = this.#shadow.querySelector<HTMLLinkElement>("link[data-tipviz-link]");
     if (!link) {
       link = document.createElement("link");
-      link.setAttribute("rel", "stylesheet");
       link.setAttribute("data-tipviz-link", "");
+      link.setAttribute("rel", "stylesheet");
       link.addEventListener("error", () => {
         console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${link?.href}`);
       });
@@ -138,44 +139,6 @@ export class TipVizTooltip extends HTMLElement {
     link.href = stylesheetUrl;
   }
 
-  /**
-   * Sets the HTML template for the tooltip.
-   * @param htmlString - The HTML string to use as the tooltip template.
-   *                      May contain data-bind attributes to bind data values.
-   * @remarks
-   * Parses the HTML with DOMParser and sanitizes it via `sanitizeHtml`
-   * (default config strips on* event handlers, dangerous elements, and unsafe URL schemes).
-   * Caches references to [data-bind] elements for O(1) updates on data changes.
-   * If data was set before the template, applies it immediately.
-   * @example
-   * ```typescript
-   * tooltip.setTemplate('<span data-bind="name"></span>');
-   * ```
-   */
-  public setTemplate(htmlString: string): void {
-    this.#templateHtml = htmlString;
-    this.#tooltipDiv.innerHTML = sanitizeHtml(htmlString, this.#sanitizerConfig);
-    this.#cacheBoundElements();
-    this.#templateSet = true;
-    this.#templateApplied = true;
-
-    if (Object.keys(this.#data).length > 0) {
-      this.#applyDataToBoundElements();
-    }
-  }
-
-  /**
-   * Sets the data values for the tooltip template bindings.
-   * @param data - A record mapping binding keys to string | number values.
-   * @remarks
-   * Updates the textContent of cached [data-bind] elements that match the data keys.
-   * If no template is set yet, stores the data and applies it when setTemplate is called.
-   * Emits a console.warn for keys that have no corresponding data-bind element.
-   * @example
-   * ```typescript
-   * tooltip.setData({ name: "Alice", score: 42 });
-   * ```
-   */
   public setData(data: Record<string, string | number>): void {
     this.#data = { ...this.#data, ...data };
 
@@ -208,43 +171,6 @@ export class TipVizTooltip extends HTMLElement {
     }
   }
 
-  /**
-   * Caches references to DOM elements with data-bind attributes.
-   */
-  #cacheBoundElements(): void {
-    this.#boundElements.clear();
-
-    const nodes = this.#tooltipDiv.querySelectorAll<HTMLElement>("[data-bind]");
-
-    for (const node of nodes) {
-      const dataKey = node.dataset.bind;
-      if (dataKey) {
-        const existing = this.#boundElements.get(dataKey);
-        if (existing) {
-          existing.push(node);
-        } else {
-          this.#boundElements.set(dataKey, [node]);
-        }
-      }
-    }
-  }
-
-  /**
-   * Applies stored data to cached bound elements.
-   */
-  #applyDataToBoundElements(): void {
-    for (const [key, value] of Object.entries(this.#data)) {
-      const elements = this.#boundElements.get(key);
-      if (elements) {
-        for (const el of elements) {
-          el.textContent = String(value);
-        }
-      } else {
-        console.warn(`[tip-viz-tooltip] No data-bind="${key}" found in template`);
-      }
-    }
-  }
-
   public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
     this.#directionCallback = fn as DirectionFn;
   }
@@ -256,9 +182,9 @@ export class TipVizTooltip extends HTMLElement {
   public setStyles(css: string) {
     this.#stylesText = css;
 
-    this.#removeStylesheetLink();
-    this.#removeInlineStyles();
     this.#removeAdoptedStylesheet();
+    this.#removeInlineStyles();
+    this.#removeStylesheetLink();
 
     if (!this.#stylesText) return;
 
@@ -278,23 +204,30 @@ export class TipVizTooltip extends HTMLElement {
     }
   }
 
-  #removeInlineStyles() {
-    const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
-    if (oldStyle) oldStyle.remove();
-  }
+  /**
+   * Sets the HTML template for the tooltip.
+   * @param htmlString - The HTML string to use as the tooltip template.
+   *                      May contain data-bind attributes to bind data values.
+   * @remarks
+   * Parses the HTML with DOMParser and sanitizes it via `sanitizeHtml`
+   * (default config strips on* event handlers, dangerous elements, and unsafe URL schemes).
+   * Caches references to [data-bind] elements for O(1) updates on data changes.
+   * If data was set before the template, applies it immediately.
+   * @example
+   * ```typescript
+   * tooltip.setTemplate('<span data-bind="name"></span>');
+   * ```
+   */
+  public setTemplate(htmlString: string): void {
+    this.#templateHtml = htmlString;
+    this.#tooltipDiv.innerHTML = sanitizeHtml(htmlString, this.#sanitizerConfig);
+    this.#cacheBoundElements();
+    this.#templateApplied = true;
+    this.#templateSet = true;
 
-  #removeStylesheetLink() {
-    const link = this.#shadow.querySelector("link[data-tipviz-link]");
-    if (link) link.remove();
-  }
-
-  #removeAdoptedStylesheet() {
-    if (!this.#adoptedStylesheet) return;
-    const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-    root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
-      (sheet) => sheet !== this.#adoptedStylesheet,
-    );
-    this.#adoptedStylesheet = null;
+    if (Object.keys(this.#data).length > 0) {
+      this.#applyDataToBoundElements();
+    }
   }
 
   /**
@@ -334,8 +267,8 @@ export class TipVizTooltip extends HTMLElement {
     const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
     const coordinates = getCoordinates(dir, targetRect, tooltipRect);
 
-    this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
     this.#tooltipDiv.style.left = `${coordinates.left + offsetX + window.scrollX}px`;
+    this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
 
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
@@ -344,42 +277,40 @@ export class TipVizTooltip extends HTMLElement {
     this.#setDescribedBy(target);
 
     this.dispatchEvent(new CustomEvent("show", {
-      detail: { target, data: this.#data, direction: dir, position: coordinates },
-      bubbles: true, composed: true,
+      bubbles: true,
+      composed: true,
+      detail: { data: this.#data, direction: dir, position: coordinates, target },
     }));
   }
 
-  public hide() {
-    this.#tooltipDiv.style.opacity = "0";
-    this.#tooltipDiv.style.pointerEvents = "none";
-    this.#tooltipDiv.setAttribute("aria-hidden", "true");
-    this.setAttribute("aria-hidden", "true");
-    this.#clearDescribedBy();
-    this.dispatchEvent(new CustomEvent("hide", { bubbles: true, composed: true }));
-  }
-
-  #ensureAccessibleHostAttributes() {
-    this.setAttribute("role", "tooltip");
-    this.setAttribute("aria-hidden", this.#tooltipDiv.style.opacity === "1" ? "false" : "true");
-
-    if (this.id) {
-      return;
+  #applyDataToBoundElements(): void {
+    for (const [key, value] of Object.entries(this.#data)) {
+      const elements = this.#boundElements.get(key);
+      if (elements) {
+        for (const el of elements) {
+          el.textContent = String(value);
+        }
+      } else {
+        console.warn(`[tip-viz-tooltip] No data-bind="${key}" found in template`);
+      }
     }
-
-    TipVizTooltip.#idCounter += 1;
-    this.id = `tip-viz-tooltip-${TipVizTooltip.#idCounter}`;
   }
 
-  #setDescribedBy(target: Element) {
-    this.#clearDescribedBy();
-    this.#activeTarget = target;
+  #cacheBoundElements(): void {
+    this.#boundElements.clear();
 
-    if (!(target instanceof HTMLElement)) return;
+    const nodes = this.#tooltipDiv.querySelectorAll<HTMLElement>("[data-bind]");
 
-    const currentDescribedBy = target.getAttribute("aria-describedby") ?? "";
-    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
-    if (!ids.includes(this.id)) {
-      target.setAttribute("aria-describedby", [...ids, this.id].join(" "));
+    for (const node of nodes) {
+      const dataKey = node.dataset.bind;
+      if (dataKey) {
+        const existing = this.#boundElements.get(dataKey);
+        if (existing) {
+          existing.push(node);
+        } else {
+          this.#boundElements.set(dataKey, [node]);
+        }
+      }
     }
   }
 
@@ -400,5 +331,58 @@ export class TipVizTooltip extends HTMLElement {
     }
 
     this.#activeTarget = null;
+  }
+
+  #ensureAccessibleHostAttributes() {
+    this.setAttribute("aria-hidden", this.#tooltipDiv.style.opacity === "1" ? "false" : "true");
+    this.setAttribute("role", "tooltip");
+
+    if (this.id) {
+      return;
+    }
+
+    TipVizTooltip.#idCounter += 1;
+    this.id = `tip-viz-tooltip-${TipVizTooltip.#idCounter}`;
+  }
+
+  #removeAdoptedStylesheet() {
+    if (!this.#adoptedStylesheet) return;
+    const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+    root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
+      (sheet) => sheet !== this.#adoptedStylesheet,
+    );
+    this.#adoptedStylesheet = null;
+  }
+
+  #removeInlineStyles() {
+    const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
+    if (oldStyle) oldStyle.remove();
+  }
+
+  #removeStylesheetLink() {
+    const link = this.#shadow.querySelector("link[data-tipviz-link]");
+    if (link) link.remove();
+  }
+
+  #setDescribedBy(target: Element) {
+    this.#clearDescribedBy();
+    this.#activeTarget = target;
+
+    if (!(target instanceof HTMLElement)) return;
+
+    const currentDescribedBy = target.getAttribute("aria-describedby") ?? "";
+    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
+    if (!ids.includes(this.id)) {
+      target.setAttribute("aria-describedby", [...ids, this.id].join(" "));
+    }
+  }
+
+  #updateTransitionDuration(duration: string) {
+    const nextDuration = parseInt(duration, 10);
+    if (!Number.isNaN(nextDuration)) {
+      this.#transitionDuration = nextDuration;
+    }
+
+    this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
   }
 }

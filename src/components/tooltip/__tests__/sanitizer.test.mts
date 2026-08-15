@@ -1,5 +1,5 @@
 import { sanitizeHtml } from "../sanitizer.mjs";
-import { SANITIZER_CONFIG } from "../constants.mjs";
+import { sanitizerConfig } from "../constants.mjs";
 
 /**
  * Parses HTML string into a DOM Document for querying.
@@ -15,7 +15,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("removes script elements", () => {
       const result = sanitizeHtml(
         "<div><script>alert(1)</script><span>safe</span></div>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("script")).toBeNull();
@@ -25,7 +25,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("removes iframe elements", () => {
       const result = sanitizeHtml(
         "<div><iframe srcdoc='<h1>evil</h1>'></iframe><p>ok</p></div>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("iframe")).toBeNull();
@@ -35,7 +35,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("removes object elements", () => {
       const result = sanitizeHtml(
         "<div><object data='/embed.swf'></object><span>safe</span></div>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("object")).toBeNull();
@@ -47,7 +47,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("removes iframe element entirely (srcdoc attribute is moot — parent gone)", () => {
       const result = sanitizeHtml(
         "<iframe srcdoc='<h1>evil</h1>' width='200'></iframe>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("iframe")).toBeNull();
@@ -56,7 +56,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("removes button element entirely (formaction attribute is moot — parent gone)", () => {
       const result = sanitizeHtml(
         "<button formaction='https://evil.com'>submit</button>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("button")).toBeNull();
@@ -105,7 +105,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("strips on* event-handler attributes by default", () => {
       const result = sanitizeHtml(
         "<img src='x' onerror='alert(1)' alt='x'>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("img")?.getAttribute("onerror")).toBeNull();
@@ -114,7 +114,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("strips javascript: URLs from href by default", () => {
       const result = sanitizeHtml(
         "<a href='javascript:alert(1)'>click</a>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("a")?.getAttribute("href")).toBeNull();
@@ -125,7 +125,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("strips bare data: URLs", () => {
       const result = sanitizeHtml(
         "<a href='data:text/html,<script>alert(1)</script>'>click</a>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("a")?.getAttribute("href")).toBeNull();
@@ -134,7 +134,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("keeps data:image/ URLs", () => {
       const result = sanitizeHtml(
         "<a href='data:image/png;base64,abc'>image</a>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("a")?.getAttribute("href")).toBe("data:image/png;base64,abc");
@@ -143,7 +143,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
     it("strips vbscript: URLs", () => {
       const result = sanitizeHtml(
         "<a href='vbscript:msgbox(\"hi\")'>click</a>",
-        SANITIZER_CONFIG,
+        sanitizerConfig,
       );
       const doc = parseHtml(result);
       expect(doc.querySelector("a")?.getAttribute("href")).toBeNull();

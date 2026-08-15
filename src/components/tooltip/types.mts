@@ -1,6 +1,6 @@
-export type Direction = "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se";
+export type Direction = "e" | "n" | "ne" | "nw" | "s" | "se" | "sw" | "w";
 export type Offset = [number, number];
-export type TooltipData = Record<string, unknown>;
+export interface TooltipData extends Record<string, unknown> {}
 export type OffsetCallback<TData extends TooltipData = TooltipData> =
   (data: TData, target: Element) => Offset;
 export type DirectionFn<TData extends TooltipData = TooltipData> =

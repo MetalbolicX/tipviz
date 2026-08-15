@@ -9,4 +9,4 @@ export const defineTooltip = async (): Promise<void> => {
     const mod = await import("./tooltip.mjs");
     customElements.define("tip-viz-tooltip", mod.TipVizTooltip);
   }
-}
+};

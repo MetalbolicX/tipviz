@@ -1,13 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { TipVizTooltip, Direction, Offset, OffsetCallback, DirectionFn } from "../index.mjs";
-import type { Direction as DirectionType } from "../components/tooltip/types.mjs";
+import { Direction, Offset, TipVizTooltip } from "../index.mjs";
 
 describe("integration: src/index.mts", () => {
   it("auto-registers <tip-viz-tooltip> on import", () => {
-    const Registered = customElements.get("tip-viz-tooltip");
-    expect(Registered).toBeDefined();
-    expect(Registered).toBe(TipVizTooltip);
+    const registered = customElements.get("tip-viz-tooltip");
+    expect(registered).toBeDefined();
+    expect(registered).toBe(TipVizTooltip);
   });
 
   it("exports the TipVizTooltip class", () => {
@@ -16,10 +15,10 @@ describe("integration: src/index.mts", () => {
   });
 
   it("exports all types at the module level", () => {
-    const _d: Direction = "n";
-    const _o: Offset = [0, 0];
-    expect(_d).toBe("n");
-    expect(_o).toEqual([0, 0]);
+    const d: Direction = "n";
+    const o: Offset = [0, 0];
+    expect(d).toBe("n");
+    expect(o).toEqual([0, 0]);
   });
 
   it("can create a tooltip element via document.createElement", () => {
@@ -82,8 +81,8 @@ describe("integration: src/index.mts", () => {
     const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
     container.appendChild(tooltip);
 
-    expect(tooltip.parentElement).toBe(document.body);
     expect(container.childNodes.length).toBe(0);
+    expect(tooltip.parentElement).toBe(document.body);
 
     document.body.textContent = "";
   });
@@ -103,23 +102,37 @@ describe("integration: src/index.mts", () => {
 
   it("can create and use a tooltip end-to-end (v3.0 API)", () => {
     const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
-    const target = document.createElement("div");
-    document.body.append(tooltip, target);
+    const targetEl = document.createElement("div");
+    document.body.append(tooltip, targetEl);
 
-    vi.spyOn(target, "getBoundingClientRect").mockReturnValue({
-      x: 200, y: 100, top: 100, left: 200, bottom: 130, right: 280,
-      width: 80, height: 30, toJSON: () => ({}),
+    vi.spyOn(targetEl, "getBoundingClientRect").mockReturnValue({
+      bottom: 130,
+      height: 30,
+      left: 200,
+      right: 280,
+      toJSON: () => ({}),
+      top: 100,
+      width: 80,
+      x: 200,
+      y: 100,
     } as DOMRect);
 
     const tooltipBox = tooltip.shadowRoot?.querySelector<HTMLDivElement>(".tipviz-tooltip")!;
     vi.spyOn(tooltipBox, "getBoundingClientRect").mockReturnValue({
-      x: 0, y: 0, top: 0, left: 0, bottom: 20, right: 60,
-      width: 60, height: 20, toJSON: () => ({}),
+      bottom: 20,
+      height: 20,
+      left: 0,
+      right: 60,
+      toJSON: () => ({}),
+      top: 0,
+      width: 60,
+      x: 0,
+      y: 0,
     } as DOMRect);
 
     tooltip.setTemplate("<strong>Integrated</strong>");
     tooltip.setDirection(() => "s");
-    tooltip.show(target);
+    tooltip.show(targetEl);
 
     expect(tooltipBox.querySelector("strong")?.textContent).toBe("Integrated");
     expect(tooltipBox.style.opacity).toBe("1");

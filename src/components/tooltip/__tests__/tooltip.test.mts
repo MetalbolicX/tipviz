@@ -1,27 +1,27 @@
 import { TipVizTooltip } from "../tooltip.mjs";
 
 type RectInput = {
-  top: number;
-  left: number;
-  width: number;
   height: number;
+  left: number;
+  top: number;
+  width: number;
 };
 
-const TOOLTIP_TAG = "tip-viz-tooltip";
+const tooltipTag = "tip-viz-tooltip";
 
-const createRect = ({ top, left, width, height }: RectInput): DOMRect => {
-  const right = left + width;
+const createRect = ({ height, left, top, width }: RectInput): DOMRect => {
   const bottom = top + height;
+  const right = left + width;
   return {
-    x: left,
-    y: top,
-    top,
+    bottom,
+    height,
     left,
     right,
-    bottom,
-    width,
-    height,
     toJSON: () => ({}),
+    top,
+    width,
+    x: left,
+    y: top,
   } as DOMRect;
 };
 
@@ -42,19 +42,19 @@ describe("TipVizTooltip", () => {
   let target: HTMLDivElement;
 
   beforeAll(() => {
-    if (!customElements.get(TOOLTIP_TAG)) {
-      customElements.define(TOOLTIP_TAG, TipVizTooltip);
+    if (!customElements.get(tooltipTag)) {
+      customElements.define(tooltipTag, TipVizTooltip);
     }
   });
 
   beforeEach(() => {
     target = document.createElement("div");
-    tooltip = document.createElement(TOOLTIP_TAG) as TipVizTooltip;
+    tooltip = document.createElement(tooltipTag) as TipVizTooltip;
 
     document.body.append(target, tooltip);
 
-    mockRect(target, { top: 100, left: 50, width: 80, height: 40 });
-    mockRect(getTooltipBox(tooltip), { top: 0, left: 0, width: 20, height: 10 });
+    mockRect(target, { height: 40, left: 50, top: 100, width: 80 });
+    mockRect(getTooltipBox(tooltip), { height: 10, left: 0, top: 0, width: 20 });
   });
 
   afterEach(() => {
@@ -67,7 +67,7 @@ describe("TipVizTooltip", () => {
   });
 
   it("applies transition-duration from attribute on connect", () => {
-    const customTooltip = document.createElement(TOOLTIP_TAG) as TipVizTooltip;
+    const customTooltip = document.createElement(tooltipTag) as TipVizTooltip;
     customTooltip.setAttribute("transition-duration", "450");
 
     document.body.appendChild(customTooltip);
@@ -127,7 +127,7 @@ describe("TipVizTooltip", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       tooltip.setTemplate("<span data-bind='name'></span>");
-      tooltip.setData({ name: "Bob", extra: "ignored" });
+      tooltip.setData({ extra: "ignored", name: "Bob" });
 
       expect(warnSpy).toHaveBeenCalledWith("[tip-viz-tooltip] No data-bind=\"extra\" found in template");
 
@@ -250,7 +250,7 @@ describe("TipVizTooltip", () => {
 
   it("dispatches a show event with detail payload", () => {
     const onShow = vi.fn();
-    tooltip.addEventListener("show", onShow as EventListener);
+    tooltip.addEventListener("show", onShow);
     tooltip.setTemplate("<span>test</span>");
     tooltip.setData({ id: 42 });
 
@@ -270,7 +270,7 @@ describe("TipVizTooltip", () => {
 
   it("hides tooltip and dispatches hide event", () => {
     const onHide = vi.fn();
-    tooltip.addEventListener("hide", onHide as EventListener);
+    tooltip.addEventListener("hide", onHide);
 
     tooltip.setTemplate("<span>content</span>");
     tooltip.show(target);

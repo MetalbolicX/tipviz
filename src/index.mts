@@ -5,4 +5,4 @@ if (!customElements.get("tip-viz-tooltip")) {
   customElements.define("tip-viz-tooltip", _T);
 }
 
-export type { Direction, Offset, OffsetCallback, DirectionFn, TooltipData } from "./components/tooltip/types.mjs";
+export type { Direction, DirectionFn, Offset, OffsetCallback, TooltipData } from "./components/tooltip/types.mjs";

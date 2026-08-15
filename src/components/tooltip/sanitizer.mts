@@ -1,4 +1,4 @@
-import { SANITIZER_CONFIG } from "./constants.mjs";
+import { sanitizerConfig } from "./constants.mjs";
 
 // NOTE: This module uses `new DOMParser().parseFromString(...)` and reads
 // `doc.body.innerHTML` to perform HTML sanitization. The project's ESLint
@@ -10,7 +10,6 @@ import { SANITIZER_CONFIG } from "./constants.mjs";
 // future lint-config tightening could keep these exceptions scoped via
 // overrides, but the current behavior is intentional.
 export function sanitizeHtml(html: string, config: SanitizerConfig): string {
-  // eslint-disable-next-line no-restricted-properties
   const doc = new DOMParser().parseFromString(html, "text/html");
   const it = doc.createNodeIterator(doc.body, NodeFilter.SHOW_ELEMENT);
   let node: Element | null;
@@ -30,33 +29,33 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
 
     const attrs = Array.from(node.attributes, ({ name }) => name);
 
-    const urlAttrs = new Set(["href", "src", "xlink:href", "action", "formaction", "background", "poster"]);
+    const urlAttrs = new Set(["action", "formaction", "href", "poster", "src", "xlink:href"]);
 
     for (const attrName of attrs) {
-      let shouldRemove = false;
+      let mustRemove = false;
 
       for (const rule of dangerousAttrRules) {
         if (typeof rule === "string" && attrName === rule) {
-          shouldRemove = true;
+          mustRemove = true;
           break;
         }
         if (rule instanceof RegExp && rule.test(attrName)) {
-          shouldRemove = true;
+          mustRemove = true;
           break;
         }
       }
 
-      if (!shouldRemove && urlAttrs.has(attrName)) {
+      if (!mustRemove && urlAttrs.has(attrName)) {
         const value = node.getAttribute(attrName)?.trim().toLowerCase() ?? "";
         if (value.startsWith("javascript:") || value.startsWith("vbscript:")) {
-          shouldRemove = true;
+          mustRemove = true;
         }
         if (value.startsWith("data:") && !value.startsWith("data:image/")) {
-          shouldRemove = true;
+          mustRemove = true;
         }
       }
 
-      if (shouldRemove) {
+      if (mustRemove) {
         node.removeAttribute(attrName);
       }
     }
@@ -70,4 +69,4 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
   return doc.body.innerHTML;
 }
 
-export { SANITIZER_CONFIG };
+export { sanitizerConfig };

@@ -138,11 +138,11 @@ describe("integration: src/index.mts", () => {
     tooltip.show(targetEl);
 
     expect(tooltipBox.querySelector("strong")?.textContent).toBe("Integrated");
-    expect(tooltipBox.style.opacity).toBe("1");
+    expect(tooltipBox.getAttribute("data-visible")).toBe("true");
     expect(tooltipBox.classList.contains("s")).toBe(true);
 
     tooltip.hide();
-    expect(tooltipBox.style.opacity).toBe("0");
+    expect(tooltipBox.hasAttribute("data-visible")).toBe(false);
 
     document.body.textContent = "";
   });

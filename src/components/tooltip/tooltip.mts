@@ -89,6 +89,23 @@ export class TipVizTooltip extends HTMLElement {
 
     // Refresh described-by for the new document context
     this.#refreshDescribedBy();
+
+    // WHY: disconnectedCallback wipes template/data before adoption fires
+    // adoptedCallback. Cross-document adoption fires disconnectedCallback
+    // then adoptedCallback in sequence, so we detect the wipe by checking
+    // #templateHtml (preserved as a string) vs #templateSet (wiped to false).
+    // If #templateHtml is non-empty but #templateSet is false, we were adopted
+    // and need to re-render from the preserved HTML in the new document context.
+    if (this.#templateHtml) {
+      const tmpl = this.#templateHtml;
+      const frag = this.ownerDocument.createRange().createContextualFragment(
+        sanitizeHtml(tmpl, this.#sanitizerConfig),
+      );
+      this.#tooltipDiv.replaceChildren(...frag.children);
+      this.#templateSet = true;
+      this.#cacheBoundElements();
+      this.#applyDataToBoundElements();
+    }
   }
 
   /**
@@ -140,17 +157,13 @@ export class TipVizTooltip extends HTMLElement {
     this.#removeInlineStyles();
     this.#removeStylesheetLink();
 
-    this.#boundElements.clear();
-    this.#data = {};
-    this.#templateHtml = "";
-    this.#templateSet = false;
-
-    for (/**
-          *
-          */
-    const child of [...this.#tooltipDiv.childNodes]) {
-      child.remove();
-    }
+    // WHY: Template/data are adoption state, not connection state.
+    // Cross-document adoption fires disconnectedCallback then adoptedCallback.
+    // Clearing them here made show() fail after adoption with "No template set".
+    // Same-doc reconnect preserves state naturally since connectedCallback
+    // does not restore — the component doesn't wipe what it doesn't need to.
+    // #boundElements, #data, #templateHtml, #templateSet, and #tooltipDiv
+    // children are all preserved across disconnect/reconnect cycles.
 
     this.#stylesText = "";
     if (this.#currentDirection) {
@@ -252,7 +265,7 @@ export class TipVizTooltip extends HTMLElement {
       /**
        *
        */
-      const fragment = document
+      const fragment = this.ownerDocument
         .createRange()
         .createContextualFragment(sanitizeHtml(this.#templateHtml, this.#sanitizerConfig));
       this.#tooltipDiv.replaceChildren(...fragment.children);
@@ -319,7 +332,7 @@ export class TipVizTooltip extends HTMLElement {
     /**
      *
      */
-    const fragment = document
+    const fragment = this.ownerDocument
       .createRange()
       .createContextualFragment(sanitizeHtml(htmlString, this.#sanitizerConfig));
     this.#tooltipDiv.replaceChildren(...fragment.children);

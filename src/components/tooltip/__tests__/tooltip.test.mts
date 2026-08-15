@@ -287,7 +287,7 @@ describe("TipVizTooltip", () => {
     expect(onHide).toHaveBeenCalledTimes(1);
   });
 
-  it("clears tooltip children on disconnectedCallback", () => {
+  it("preserves tooltip children across disconnectedCallback (adoption-safe)", () => {
     tooltip.setTemplate("<span>cleanup</span>");
     tooltip.show(target);
 
@@ -296,7 +296,9 @@ describe("TipVizTooltip", () => {
 
     tooltip.disconnectedCallback();
 
-    expect(tooltipBox.childNodes.length).toBe(0);
+    // Children are preserved across disconnect to support cross-document adoption.
+    // Template/data survives; adoptedCallback re-renders in the new document.
+    expect(tooltipBox.childNodes.length).toBeGreaterThan(0);
   });
 
   it("setStyles() called multiple times only applies the latest CSS", () => {

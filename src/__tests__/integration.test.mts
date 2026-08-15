@@ -151,6 +151,42 @@ describe("integration: src/index.mts", () => {
   // MDA: Phase 4 — Integration tests for multi-document adoption
   // -------------------------------------------------------------------------
   describe("multi-document adoption integration", () => {
+    it("show() works after real cross-document adoption via adoptNode", () => {
+      const target = document.createElement("div");
+      document.body.appendChild(target);
+      const foreignDoc = document.implementation.createHTMLDocument();
+      const foreignTarget = foreignDoc.createElement("div");
+      foreignDoc.body.appendChild(foreignTarget);
+
+      const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
+      tooltip.setTemplate("<div data-bind=\"label\"></div>");
+      tooltip.setData({ label: "before-adoption" });
+      document.body.appendChild(tooltip);
+
+      const warnSpy = vi.spyOn(console, "warn").mockResolvedValue(undefined);
+      tooltip.show(target);
+
+      // Real cross-document adoption
+      foreignDoc.adoptNode(tooltip);
+      foreignDoc.body.appendChild(tooltip);
+      tooltip.adoptedCallback();
+
+      // show() after adoption
+      tooltip.setData({ label: "after-adoption" });
+      tooltip.show(foreignTarget);
+
+      // Assertions
+      expect(warnSpy).not.toHaveBeenCalled();
+      const sr = tooltip.shadowRoot;
+      const box = sr?.querySelector("[data-tipviz-tooltip-box]");
+      expect(box?.getAttribute("data-visible")).toBe("true");
+
+      // Clean up
+      warnSpy.mockRestore();
+      document.body.removeChild(target);
+      foreignDoc.body.removeChild(foreignTarget);
+    });
+
     it("re-creates structural sheet in adopting document and preserves data-visible state (MDA: Adopted after consumer styles were applied)", () => {
       // Create foreign document for adoption scenario
       const foreignDoc = document.implementation.createHTMLDocument();
@@ -187,10 +223,16 @@ describe("integration: src/index.mts", () => {
       const rootBefore = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
       const structuralSheetBefore = rootBefore.adoptedStyleSheets[0];
 
-      // Simulate re-adoption (remove and re-append triggers adoptedCallback)
+      // Simulate same-document re-connection (remove + re-append fires connectedCallback
+      // but NOT adoptedCallback in real browsers — only cross-document adoptNode fires it).
+      // jsdom does not auto-fire adoptedCallback for same-doc moves; we call it manually.
       foreignDoc.body.removeChild(tooltip);
       foreignDoc.body.appendChild(tooltip);
       tooltip.adoptedCallback();
+
+      // Verify show() works after adoption (tooltip content preserved)
+      tooltip.show(targetEl);
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
 
       // Verify structural sheet is re-created in new document (fresh instance, not same reference)
       const rootAfter = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };

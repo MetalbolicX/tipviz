@@ -74,7 +74,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
       };
       const result = sanitizeHtml(
         "<iframe srcdoc='<h1>content</h1>' width='200'></iframe>",
-        config as SanitizerConfig,
+        config,
       );
       const doc = parseHtml(result);
       const iframe = doc.querySelector("iframe");
@@ -92,7 +92,7 @@ describe("sanitizeHtml — direct-call unit tests", () => {
       };
       const result = sanitizeHtml(
         "<button formaction='https://evil.com'>submit</button>",
-        config as SanitizerConfig,
+        config,
       );
       const doc = parseHtml(result);
       const button = doc.querySelector("button");

@@ -115,7 +115,7 @@ describe("integration: src/index.mts", () => {
       width: 80,
       x: 200,
       y: 100,
-    } as DOMRect);
+    });
 
     const tooltipBox = tooltip.shadowRoot?.querySelector<HTMLDivElement>(".tipviz-tooltip")!;
     vi.spyOn(tooltipBox, "getBoundingClientRect").mockReturnValue({
@@ -128,7 +128,7 @@ describe("integration: src/index.mts", () => {
       width: 60,
       x: 0,
       y: 0,
-    } as DOMRect);
+    });
 
     tooltip.setTemplate("<strong>Integrated</strong>");
     tooltip.setDirection(() => "s");

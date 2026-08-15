@@ -22,7 +22,7 @@ const createRect = ({ height, left, top, width }: RectInput): DOMRect => {
     width,
     x: left,
     y: top,
-  } as DOMRect;
+  };
 };
 
 const mockRect = (element: Element, rect: RectInput) => {

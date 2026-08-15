@@ -252,8 +252,8 @@ export class TipVizTooltip extends HTMLElement {
       return;
     }
 
-    const dir = this.#directionCallback(this.#data as TooltipData, target) as Direction;
-    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(this.#data as TooltipData, target);
+    const dir = this.#directionCallback(this.#data, target);
+    const [offsetX = 0, offsetY = 0] = this.#offsetCallback(this.#data, target);
 
     if (this.#currentDirection && this.#currentDirection !== dir) {
       this.#tooltipDiv.classList.remove(this.#currentDirection);

@@ -306,7 +306,7 @@ export class TipVizTooltip extends HTMLElement {
       if (dataKey) {
         const existing = this.#boundElements.get(dataKey);
         if (existing) {
-          existing.push(node);
+          existing.push(...[node]);
         } else {
           this.#boundElements.set(dataKey, [node]);
         }

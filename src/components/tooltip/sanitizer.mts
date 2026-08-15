@@ -23,7 +23,7 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
     const tagName = node.tagName.toLowerCase();
 
     if (dangerousElements.has(tagName)) {
-      removeQueue.push(node);
+      removeQueue.push(...[node]);
       continue;
     }
 

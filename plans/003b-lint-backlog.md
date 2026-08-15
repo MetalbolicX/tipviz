@@ -115,10 +115,17 @@ never `package.json`, never `.github/workflows/ci.yml`, never `AGENTS.md`):
 
 - `eslint.config.mjs` — no rule changes. If a rule truly can't be satisfied,
   STOP and report.
-- The two documented `eslint-disable-next-line no-restricted-properties` in
-  `src/components/tooltip/sanitizer.mts` (lines 13 and 69 — verify by
-  `grep -n "eslint-disable" src/components/tooltip/sanitizer.mts`; expect
-  exactly 3 lines: 1 doc comment + 2 disables).
+- `src/components/tooltip/sanitizer.mts` may be modified, but **only** to fix
+  the 4 lint errors it currently reports (line 13 unused-disable, line 27
+  `.push()`, line 33 sort-sets, line 36 naming-convention). After those fixes
+  the file MUST end up with exactly **one** `eslint-disable-next-line
+  no-restricted-properties` directive (line 69, before `return doc.body.innerHTML`
+  — that one is genuinely needed). Allowed sanitizer edits:
+  - Delete the `eslint-disable-next-line no-restricted-properties` on line 13 (it's an "Unused eslint-disable directive" — DOMParser line doesn't trigger `no-restricted-properties`).
+  - Replace `removeQueue.push(node)` on line 27 with `removeQueue = [...removeQueue, node];` (or any equivalent non-mutating construction).
+  - Reorder the `Set` literal on line 33 to alphabetical: `["action", "background", "formaction", "href", "poster", "src", "xlink:href"]`.
+  - Rename `shouldRemove` to a name that satisfies naming-convention (e.g., `markRemove`). The current name is flagged because the boolean naming rule expects `is*`/`has*`/`can*`/`should*`/`will*`/`did*` prefix — and "shouldRemove" starts with `should` BUT the variable's mutation pattern doesn't match; rename to `markRemove` or `isRemovable` is simplest.
+- `src/types/sanitizer.d.ts` must stay byte-identical to commit `9413f8c`.
 - `package.json`, `pnpm-lock.yaml`, `.github/`, `AGENTS.md`, `plans/`.
 
 ## Git workflow
@@ -135,9 +142,10 @@ never `package.json`, never `.github/workflows/ci.yml`, never `AGENTS.md`):
 ```bash
 git status                                  # clean
 git log --oneline -2                        # 8a2c264, a18e22d
-grep -c "eslint-disable" src/components/tooltip/sanitizer.mts   # 3 (1 doc + 2 disables)
+grep -c "eslint-disable" src/components/tooltip/sanitizer.mts   # 2 (the comment block mentions eslint-disable; 2 actual directives at lines 13 and 69)
+grep -c "eslint-disable-next-line no-restricted-properties" src/components/tooltip/sanitizer.mts   # 2
 pnpm test                                   # 57 passed, 0 skipped
-pnpm run lint 2>&1 | tail -3                # "161 errors, 188 warnings"
+pnpm run lint 2>&1 | tail -3                # "160 errors, 188 warnings"
 ```
 
 If any check fails, STOP — the working tree was not clean when this plan
@@ -204,7 +212,7 @@ Commit: `style: cleanup stylistic lint findings (consistent type defs, dot notat
 pnpm run lint                                        # exit 0
 pnpm test                                            # 57 passed, 0 skipped
 pnpm run typecheck                                   # exit 0
-grep -c "eslint-disable" src/components/tooltip/sanitizer.mts   # still 3 (1 doc + 2 disables)
+grep -c "eslint-disable-next-line no-restricted-properties" src/components/tooltip/sanitizer.mts   # exactly 1 (line 69 only — line 13's unused disable is removed)
 ```
 
 If lint exit is non-zero, count remaining: `pnpm run lint 2>&1 | grep -E "^\s+[0-9]+:[0-9]+\s+error" | wc -l`. Whatever remains, fix and commit before declaring done. **Do not** add `eslint-disable` comments anywhere except to protect the 2 documented disables in `sanitizer.mts`.

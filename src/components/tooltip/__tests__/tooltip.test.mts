@@ -659,4 +659,29 @@ describe("TipVizTooltip", () => {
       expect(tooltip.getAttribute("aria-hidden")).toBe("true");
     });
   });
+
+  describe("setStyles with undefined adoptedStyleSheets", () => {
+    it("does not throw when shadow root adoptedStyleSheets is undefined", () => {
+      // Simulate an environment where adoptedStyleSheets is undefined
+      // by temporarily replacing the property descriptor on the shadow root
+      const tooltip2 = document.createElement(tooltipTag) as TipVizTooltip;
+      const shadow = tooltip2.shadowRoot;
+      if (!shadow) return; // guard for TS
+
+      const originalDescriptor = Object.getOwnPropertyDescriptor(ShadowRoot.prototype, "adoptedStyleSheets");
+      Object.defineProperty(shadow, "adoptedStyleSheets", {
+        configurable: true,
+        get: () => undefined,
+      });
+
+      try {
+        tooltip2.setStyles(".tip { color: red }");
+        // Should not throw — the guard in getAdoptedStyleSheets handles undefined
+      } finally {
+        if (originalDescriptor) {
+          Object.defineProperty(shadow, "adoptedStyleSheets", originalDescriptor);
+        }
+      }
+    });
+  });
 });

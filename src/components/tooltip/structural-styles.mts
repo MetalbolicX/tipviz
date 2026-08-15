@@ -1,6 +1,31 @@
 import { defaultTransitionDuration } from "./constants.mjs";
 
 /**
+ * Returns the adoptedStyleSheets array from a shadow root, guarding against
+ * undefined (some jsdom versions / iframes return undefined at runtime even
+ * though the TS type says CSSStyleSheet[]).
+ */
+export function getAdoptedStyleSheets(shadow: ShadowRoot): CSSStyleSheet[] {
+  // Guard: jsdom may return undefined at runtime even though the TS type says CSSStyleSheet[].
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return shadow.adoptedStyleSheets ?? [];
+}
+
+/**
+ * Sets adoptedStyleSheets on a shadow root, guarding against environments
+ * that do not support the constructable sheets API or where the property
+ * is undefined at runtime.
+ */
+export function setAdoptedStyleSheets(shadow: ShadowRoot, sheets: CSSStyleSheet[]): void {
+  try {
+    shadow.adoptedStyleSheets = sheets;
+  } catch {
+    // Silently ignore — the outer try/catch in insertStructuralStyles or
+    // #applyConsumerStyles will fall back to <style> injection.
+  }
+}
+
+/**
  * Behavioral CSS invariants for the tooltip box — zero visual properties.
  * Used via constructable CSSStyleSheet or <style> fallback injected into shadow root.
  * Consumers can always override via setStyles(), loadStylesheet(), or ::part(tooltip-box).
@@ -44,14 +69,7 @@ export function insertStructuralStyles(
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(behavioralCss);
     // Insert internal sheet first — consumer sheets appended after win by cascade order.
-    // Guard against undefined adoptedStyleSheets (some jsdom versions / iframes).
-    const existing = shadow.adoptedStyleSheets;
-    // Guard: the ternary is intentional — jsdom may return undefined at runtime even
-    // though the TS type says CSSStyleSheet[]. The conditional is a defensive runtime guard.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    shadow.adoptedStyleSheets = existing
-      ? [...existing, sheet]
-      : [sheet];
+    setAdoptedStyleSheets(shadow, [...getAdoptedStyleSheets(shadow), sheet]);
     return sheet;
   } catch {
     // Constructable sheets unavailable (e.g., older browser or iframe sandbox).

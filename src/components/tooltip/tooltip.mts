@@ -6,7 +6,11 @@ import {
 } from "./constants.mjs";
 import { getCoordinates } from "./positioner.mjs";
 import { sanitizeHtml } from "./sanitizer.mjs";
-import { insertStructuralStyles } from "./structural-styles.mjs";
+import {
+  getAdoptedStyleSheets,
+  insertStructuralStyles,
+  setAdoptedStyleSheets,
+} from "./structural-styles.mjs";
 import {
   Direction,
   DirectionFn,
@@ -69,7 +73,9 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Fires when the element is adopted into a new document.
+   * Re-establishes structural styles, consumer styles, accessibility attributes,
+   * and re-renders the template in the new document context.
    */
   public adoptedCallback() {
     // Re-establish accessibility host attributes in the new document
@@ -100,12 +106,9 @@ export class TipVizTooltip extends HTMLElement {
     // Refresh described-by for the new document context
     this.#refreshDescribedBy();
 
-    // WHY: disconnectedCallback wipes template/data before adoption fires
-    // adoptedCallback. Cross-document adoption fires disconnectedCallback
-    // then adoptedCallback in sequence, so we detect the wipe by checking
-    // #templateHtml (preserved as a string) vs #templateSet (wiped to false).
-    // If #templateHtml is non-empty but #templateSet is false, we were adopted
-    // and need to re-render from the preserved HTML in the new document context.
+    // WHY: #templateHtml (the HTML string) is preserved across the disconnect/adopt
+    // transition. When non-empty, the template needs to be re-parsed and re-rendered
+    // in the new document context so [data-bind] references resolve correctly.
     if (this.#templateHtml) {
       const tmpl = this.#templateHtml;
       const frag = this.ownerDocument.createRange().createContextualFragment(
@@ -119,7 +122,8 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Handles attribute changes for observed attributes.
+   * `transition-duration` and `stylesheet` are re-applied when changed.
    */
   public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "transition-duration" && newValue) {
@@ -132,7 +136,9 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Fires when the element is inserted into the DOM.
+   * Ensures host accessibility attributes, applies transition-duration/stylesheet
+   * attributes, and auto-repositions into body if not disabled.
    */
   public connectedCallback() {
     this.#ensureAccessibleHostAttributes();
@@ -155,7 +161,9 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Fires when the element is removed from the DOM.
+   * Cleans up described-by, styles, and structural styles but preserves adoption
+   * state (template, data, stylesText) for cross-document moves.
    */
   public disconnectedCallback() {
     // Only clear described-by, not the active target.
@@ -184,7 +192,7 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Hides the tooltip and clears its aria-describedby binding on the active target.
    */
   public hide() {
     this.#tooltipDiv.removeAttribute("data-visible");
@@ -195,7 +203,8 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Loads an external stylesheet URL into the tooltip's shadow root.
+   * Clears any previously-set inline styles first.
    */
   public loadStylesheet(url: string) {
     this.#stylesText = "";
@@ -244,23 +253,16 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   * Sets a custom SanitizerConfig for HTML sanitization.
-   * @param config - A SanitizerConfig object defining what elements/attributes to allow or remove.
-   * @remarks
-   * The default config removes dangerous elements (script, iframe, etc.), strips on* event
-   * handler attributes, and blocks javascript:/vbscript: URL schemes in href/src/poster/etc.
-   * If a template has already been set, re-apply it with the new sanitizer config.
-   * @example
-   * ```typescript
-   * tooltip.setSanitizerConfig({ removeElements: ["script"] });
-   * ```
+   * Sets the direction callback that returns which way the tooltip should point.
+   * @param fn - Callback receiving data and target element; returns a Direction string.
    */
    public setDirection<TData extends TooltipData>(fn: DirectionFn<TData>) {
-    this.#directionCallback = fn as DirectionFn;
-  }
+     this.#directionCallback = fn as DirectionFn;
+   }
 
   /**
-   *
+   * Sets the offset callback that returns [x, y] pixel adjustment from the anchor point.
+   * @param fn - Callback receiving data and target element; returns [offsetX, offsetY].
    */
   public setOffset<TData extends TooltipData>(fn: OffsetCallback<TData>) {
     this.#offsetCallback = fn as OffsetCallback;
@@ -417,11 +419,7 @@ export class TipVizTooltip extends HTMLElement {
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(this.#stylesText);
 
-      /**
-       *
-       */
-      const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-      root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      setAdoptedStyleSheets(this.#shadow, [...getAdoptedStyleSheets(this.#shadow), sheet]);
       this.#adoptedStylesheet = sheet;
     } catch (error) {
       /**
@@ -501,57 +499,16 @@ export class TipVizTooltip extends HTMLElement {
       this.#activeTarget = null;
       return;
     }
-
-    /**
-     *
-     */
-    const currentDescribedBy = this.#activeTarget.getAttribute("aria-describedby") ?? "";
-    /**
-     *
-     */
-    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
-    /**
-     *
-     */
-    const nextIds = ids.filter((id) => id !== this.id);
-
-    if (nextIds.length > 0) {
-      this.#activeTarget.setAttribute("aria-describedby", nextIds.join(" "));
-    } else {
-      this.#activeTarget.removeAttribute("aria-describedby");
-    }
-
-    this.#activeTarget = null;
+    this.#removeIdFromDescribedBy(this.#activeTarget, true);
   }
 
   // Clears the aria-describedby attribute WITHOUT clearing #activeTarget.
   // Used during adoption to preserve the target for re-resolution.
-  /**
-   *
-   */
   #clearDescribedByOnly() {
     if (!(this.#activeTarget instanceof HTMLElement)) {
       return;
     }
-
-    /**
-     *
-     */
-    const currentDescribedBy = this.#activeTarget.getAttribute("aria-describedby") ?? "";
-    /**
-     *
-     */
-    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
-    /**
-     *
-     */
-    const nextIds = ids.filter((id) => id !== this.id);
-
-    if (nextIds.length > 0) {
-      this.#activeTarget.setAttribute("aria-describedby", nextIds.join(" "));
-    } else {
-      this.#activeTarget.removeAttribute("aria-describedby");
-    }
+    this.#removeIdFromDescribedBy(this.#activeTarget, false);
   }
 
   /**
@@ -580,28 +537,23 @@ export class TipVizTooltip extends HTMLElement {
   #offsetCallback: OffsetCallback = () => defaultOffset;
 
   /**
-   *
+   * Re-resolves aria-describedby after cross-document adoption.
+   * Keeps the binding only if the target is still in our ownerDocument.
    */
   #refreshDescribedBy() {
-    // Re-resolve described-by against the new owner document context
-    // Only keep the binding if the target is still in our ownerDocument
-    if (this.#activeTarget && this.#activeTarget.isConnected && this.#activeTarget.ownerDocument === this.ownerDocument) {
-      // Target still valid in new document — re-establish aria described-by
+    if (
+      this.#activeTarget &&
+      this.#activeTarget.isConnected &&
+      this.#activeTarget.ownerDocument === this.ownerDocument
+    ) {
       if (this.#activeTarget instanceof HTMLElement && this.id) {
-        /**
-         *
-         */
         const currentDescribedBy = this.#activeTarget.getAttribute("aria-describedby") ?? "";
-        /**
-         *
-         */
         const ids = currentDescribedBy.split(/\s+/).filter((id) => Boolean(id));
         if (!ids.includes(this.id)) {
           this.#activeTarget.setAttribute("aria-describedby", [...ids, this.id].join(" "));
         }
       }
     } else {
-      // Target is gone or in a different document — clear
       this.#activeTarget = null;
     }
   }
@@ -611,16 +563,31 @@ export class TipVizTooltip extends HTMLElement {
    */
   #removeAdoptedStylesheet() {
     if (!this.#adoptedStylesheet) return;
-    /**
-     *
-     */
-    const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-    root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
-      (sheet) => {
-        return sheet !== this.#adoptedStylesheet;
-      },
+    setAdoptedStyleSheets(
+      this.#shadow,
+      getAdoptedStyleSheets(this.#shadow).filter((sheet) => sheet !== this.#adoptedStylesheet),
     );
     this.#adoptedStylesheet = null;
+  }
+
+  /**
+   * Removes this tooltip's id from the target's aria-describedby attribute.
+   * Clears #activeTarget when clearTarget is true (used by hide()).
+   */
+  #removeIdFromDescribedBy(el: HTMLElement, clearTarget: boolean) {
+    const currentDescribedBy = el.getAttribute("aria-describedby") ?? "";
+    const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
+    const nextIds = ids.filter((id) => id !== this.id);
+
+    if (nextIds.length > 0) {
+      el.setAttribute("aria-describedby", nextIds.join(" "));
+    } else {
+      el.removeAttribute("aria-describedby");
+    }
+
+    if (clearTarget) {
+      this.#activeTarget = null;
+    }
   }
 
   /**
@@ -639,12 +606,9 @@ export class TipVizTooltip extends HTMLElement {
    */
   #removeStructuralStylesheet() {
     if (this.#structuralSheet) {
-      /**
-       *
-       */
-      const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-      root.adoptedStyleSheets = root.adoptedStyleSheets.filter(
-        (sheet) => sheet !== this.#structuralSheet,
+      setAdoptedStyleSheets(
+        this.#shadow,
+        getAdoptedStyleSheets(this.#shadow).filter((sheet) => sheet !== this.#structuralSheet),
       );
       this.#structuralSheet = null;
     }
@@ -666,7 +630,7 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   *
+   * Sets aria-describedby on the target element, removing any stale self-reference first.
    */
   #setDescribedBy(target: Element) {
     this.#clearDescribedBy();
@@ -674,13 +638,7 @@ export class TipVizTooltip extends HTMLElement {
 
     if (!(target instanceof HTMLElement)) return;
 
-    /**
-     *
-     */
     const currentDescribedBy = target.getAttribute("aria-describedby") ?? "";
-    /**
-     *
-     */
     const ids = currentDescribedBy.split(/\s+/).filter(Boolean);
     if (!ids.includes(this.id)) {
       target.setAttribute("aria-describedby", [...ids, this.id].join(" "));

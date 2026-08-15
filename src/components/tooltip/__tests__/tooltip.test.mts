@@ -1,11 +1,11 @@
 import { TipVizTooltip } from "../tooltip.mjs";
 
-type RectInput = {
+interface RectInput {
   height: number;
   left: number;
   top: number;
   width: number;
-};
+}
 
 const tooltipTag = "tip-viz-tooltip";
 
@@ -124,7 +124,9 @@ describe("TipVizTooltip", () => {
     });
 
     it("warns when setData key has no matching data-bind element", () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+        return undefined;
+      });
 
       tooltip.setTemplate("<span data-bind='name'></span>");
       tooltip.setData({ extra: "ignored", name: "Bob" });
@@ -165,8 +167,8 @@ describe("TipVizTooltip", () => {
       const tooltipBox = getTooltipBox(tooltip);
       const spans = tooltipBox.querySelectorAll("[data-bind='label']");
       expect(spans).toHaveLength(2);
-      expect(spans[0]?.textContent).toBe("same");
-      expect(spans[1]?.textContent).toBe("same");
+      expect(spans[0].textContent).toBe("same");
+      expect(spans[1].textContent).toBe("same");
     });
 
     it("uses custom sanitizer config to filter additional elements", () => {
@@ -181,7 +183,7 @@ describe("TipVizTooltip", () => {
     });
 
     it("uses custom sanitizer config to filter additional attributes", () => {
-      tooltip.setSanitizerConfig({ removeElements: [], removeAttributes: ["data-custom"] });
+      tooltip.setSanitizerConfig({ removeAttributes: ["data-custom"], removeElements: [] });
       tooltip.setTemplate("<div data-custom='secret'><span>test</span></div>");
 
       const tooltipBox = getTooltipBox(tooltip);
@@ -200,7 +202,9 @@ describe("TipVizTooltip", () => {
     });
 
     it("shows without template warning", () => {
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+        return undefined;
+      });
 
       tooltip.show(target);
 
@@ -258,14 +262,14 @@ describe("TipVizTooltip", () => {
 
     expect(onShow).toHaveBeenCalledTimes(1);
 
-    const event = onShow.mock.calls.at(0)?.at(0) as CustomEvent<{target: Element, data: Record<string, string | number>, direction: string, position: {top: number, left: number}}>;
+    const event = onShow.mock.calls.at(0)?.at(0) as CustomEvent<{data: Record<string, number | string>, direction: string, position: {left: number, top: number}, target: Element}>;
     expect(event.type).toBe("show");
     expect(event.bubbles).toBe(true);
     expect(event.composed).toBe(true);
     expect(event.detail.target).toBe(target);
     expect(event.detail.data).toEqual({ id: 42 });
     expect(event.detail.direction).toBe("n");
-    expect(event.detail.position).toEqual({ top: 90, left: 80 });
+    expect(event.detail.position).toEqual({ left: 80, top: 90 });
   });
 
   it("hides tooltip and dispatches hide event", () => {
@@ -301,7 +305,7 @@ describe("TipVizTooltip", () => {
 
     const fallbackStyles = tooltip.shadowRoot?.querySelectorAll("style[data-tipviz]");
     expect(fallbackStyles?.length).toBe(1);
-    expect(fallbackStyles?.item(0)?.textContent).toContain("color: green");
+    expect(fallbackStyles?.item(0).textContent).toContain("color: green");
   });
 
   it("setStyles() cleans up previous loadStylesheet() link", () => {

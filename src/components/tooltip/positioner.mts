@@ -4,7 +4,7 @@ export function getCoordinates(
   dir: Direction,
   targetRect: DOMRect,
   tooltipRect: DOMRect,
-): { top: number; left: number } {
+): { left: number; top: number } {
   const t = targetRect;
   const w = tooltipRect.width;
   const h = tooltipRect.height;

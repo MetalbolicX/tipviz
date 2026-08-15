@@ -7,6 +7,7 @@ export const defaultTransitionDuration = 200;
 // NOTE: RegExp support in removeAttributes requires 'as unknown as SanitizerConfig' — the DOM
 // SanitizerConfig.removeAttributes type is string[] only; the hand-rolled #sanitize() handles RegExp.
 export const sanitizerConfig = {
+  removeAttributes: ["srcdoc", "formaction", /^on/i] as (RegExp | string)[],
   removeElements: [
     "base",
     "button",
@@ -21,5 +22,4 @@ export const sanitizerConfig = {
     "select",
     "textarea",
   ],
-  removeAttributes: ["srcdoc", "formaction", /^on/i] as (string | RegExp)[],
 } as unknown as SanitizerConfig;

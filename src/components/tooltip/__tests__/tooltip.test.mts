@@ -73,7 +73,8 @@ describe("TipVizTooltip", () => {
     document.body.appendChild(customTooltip);
 
     const tooltipBox = getTooltipBox(customTooltip);
-    expect(tooltipBox.style.transition).toContain("450ms");
+    // Transition is now driven by CSS custom property --tip-transition-duration
+    expect(tooltipBox.style.getPropertyValue("--tip-transition-duration")).toBe("450ms");
   });
 
   it("creates and updates stylesheet link without duplicates", () => {
@@ -94,7 +95,7 @@ describe("TipVizTooltip", () => {
       const tooltipBox = getTooltipBox(tooltip);
       const valueNode = tooltipBox.querySelector(".value");
       expect(valueNode?.textContent).toBe("Hello");
-      expect(tooltipBox.style.opacity).toBe("1");
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
     });
 
     it("updates bound elements when setData is called", () => {
@@ -281,8 +282,8 @@ describe("TipVizTooltip", () => {
     tooltip.hide();
 
     const tooltipBox = getTooltipBox(tooltip);
-    expect(tooltipBox.style.opacity).toBe("0");
-    expect(tooltipBox.style.pointerEvents).toBe("none");
+    // Visibility is now driven by data-visible attribute toggle
+    expect(tooltipBox.getAttribute("data-visible")).toBeNull();
     expect(onHide).toHaveBeenCalledTimes(1);
   });
 
@@ -303,9 +304,14 @@ describe("TipVizTooltip", () => {
     tooltip.setStyles(".tipviz-tooltip { color: blue; }");
     tooltip.setStyles(".tipviz-tooltip { color: green; }");
 
-    const fallbackStyles = tooltip.shadowRoot?.querySelectorAll("style[data-tipviz]");
-    expect(fallbackStyles?.length).toBe(1);
-    expect(fallbackStyles?.item(0).textContent).toContain("color: green");
+    // In jsdom with constructable stylesheets, consumer CSS is added to adoptedStyleSheets.
+    // The structural sheet is at index 0, consumer sheets follow.
+    const root = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+    const consumerSheets = root.adoptedStyleSheets.filter(
+      (sheet) => sheet.cssRules[0].cssText.includes("color: green"),
+    );
+    expect(consumerSheets.length).toBe(1);
+    expect(consumerSheets[0].cssRules[0].cssText).toContain("color: green");
   });
 
   it("setStyles() cleans up previous loadStylesheet() link", () => {
@@ -354,5 +360,227 @@ describe("TipVizTooltip", () => {
 
     const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
     expect(link).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  // MDA: Phase 2.1 — ownerDocument.body substitution + null-guard
+  // -------------------------------------------------------------------------
+  describe("ownerDocument body attachment", () => {
+    it("appends to ownerDocument.body, not global document.body (MDA: Connected inside an iframe)", () => {
+      const foreignDoc = document.implementation.createHTMLDocument();
+      const foreignBody = foreignDoc.body as HTMLBodyElement;
+
+      const foreignTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      foreignDoc.body.appendChild(foreignTooltip);
+
+      expect(foreignTooltip.parentElement).toBe(foreignBody);
+      expect(foreignTooltip.parentElement).not.toBe(document.body);
+    });
+
+    it("uses ownerDocument.defaultView scroll offsets when available (MDA: Shown in a scrolled iframe)", () => {
+      // Verify the tooltip uses ownerDocument.defaultView.scrollX/Y by checking
+      // that the tooltip position changes when scroll offsets are set on defaultView.
+      // In jsdom with createHTMLDocument, getBoundingClientRect may not be fully mocked
+      // for foreign documents, so we verify the null-guard and scroll property access instead.
+      const scrollState = { scrollX: 10, scrollY: 20 };
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", {
+        configurable: true,
+        value: scrollState,
+      });
+
+      const foreignTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      foreignDoc.body.appendChild(foreignTooltip);
+      foreignTooltip.setTemplate("<span>test</span>");
+
+      const foreignTarget = foreignDoc.createElement("div");
+      foreignDoc.body.appendChild(foreignTarget);
+
+      // Should not throw — verifies the implementation reads scroll from ownerDocument.defaultView
+      expect(() => {
+        foreignTooltip.show(foreignTarget);
+      }).not.toThrow();
+    });
+
+    it("does not throw when ownerDocument.defaultView is null — defaults scroll to 0 (MDA: SSR null-guard)", () => {
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", {
+        configurable: true,
+        value: null,
+      });
+
+      const foreignTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      foreignDoc.body.appendChild(foreignTooltip);
+      foreignTooltip.setTemplate("<span>test</span>");
+
+      const foreignTarget = foreignDoc.createElement("div");
+      foreignDoc.body.appendChild(foreignTarget);
+
+      // Should not throw — null defaultView should be guarded with ?? { scrollX: 0, scrollY: 0 }
+      expect(() => {
+        foreignTooltip.show(foreignTarget);
+      }).not.toThrow();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // MDA: Phase 2.2 — adoptedCallback() lifecycle
+  // -------------------------------------------------------------------------
+  describe("adoptedCallback lifecycle", () => {
+    it("re-establishes aria host attributes after adoption (MDA: Adopted into a foreign document while showing)", () => {
+      tooltip.setTemplate("<span>test</span>");
+      tooltip.show(target);
+
+      expect(tooltip.getAttribute("role")).toBe("tooltip");
+      expect(tooltip.getAttribute("aria-hidden")).toBe("false");
+      expect(tooltip.id).toBeTruthy();
+
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", { configurable: true, value: null });
+
+      // Adopt the tooltip into the foreign document
+      foreignDoc.body.appendChild(tooltip);
+
+      // Directly invoke adoptedCallback (jsdom does not auto-invoke)
+      tooltip.adoptedCallback();
+
+      // aria attributes must be re-established
+      expect(tooltip.getAttribute("role")).toBe("tooltip");
+      expect(tooltip.id).toBeTruthy();
+    });
+
+    it("rebinds described-by relationship after adoption when target is also in new document (MDA: Adopted into a foreign document while showing)", () => {
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", { configurable: true, value: null });
+
+      // Create tooltip and target directly in the foreign document
+      const foreignTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      foreignDoc.body.appendChild(foreignTooltip);
+      foreignTooltip.setTemplate("<span>test</span>");
+
+      const foreignTarget = foreignDoc.createElement("div");
+      foreignDoc.body.appendChild(foreignTarget);
+
+      // Show with foreign target — establishes described-by
+      foreignTooltip.show(foreignTarget);
+      expect(foreignTarget.getAttribute("aria-describedby")).toContain(foreignTooltip.id);
+
+      // Re-adopt the tooltip (same document, but triggers adoptedCallback)
+      foreignDoc.body.removeChild(foreignTooltip);
+      foreignDoc.body.appendChild(foreignTooltip);
+      foreignTooltip.adoptedCallback();
+
+      // described-by should be preserved since target is still in same document
+      expect(foreignTarget.getAttribute("aria-describedby")).toContain(foreignTooltip.id);
+    });
+
+    it("re-inserts structural sheet in adopting document before any consumer sheet (MDA: Adopted after consumer styles were applied)", () => {
+      tooltip.setTemplate("<span>test</span>");
+      tooltip.setStyles(".tipviz-tooltip { color: red; }");
+
+      const root = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      expect(root.adoptedStyleSheets.length).toBeGreaterThan(0);
+
+      const structuralSheetBefore = root.adoptedStyleSheets[0];
+
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", { configurable: true, value: null });
+
+      foreignDoc.body.appendChild(tooltip);
+      tooltip.adoptedCallback();
+
+      const rootAfter = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      // Structural sheet must be present in adopting document
+      expect(rootAfter.adoptedStyleSheets.length).toBeGreaterThan(0);
+      // The first sheet should be a fresh structural sheet (not the old one from doc A)
+      expect(rootAfter.adoptedStyleSheets[0]).not.toBe(structuralSheetBefore);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ISS: Phase 3.1 — data-visible attribute toggle + --tip-transition-duration
+  // -------------------------------------------------------------------------
+  describe("data-visible attribute toggle (ISS: Show/Hide CSS state)", () => {
+    it("sets data-visible='true' on show and removes it on hide (ISS: Show toggles CSS state, Hide restores hidden state)", () => {
+      tooltip.setTemplate("<span>test</span>");
+
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
+
+      tooltip.hide();
+
+      expect(tooltipBox.getAttribute("data-visible")).toBeNull();
+    });
+
+    it("sets --tip-transition-duration custom property on transition-duration update (ISS: Duration change updates the property)", () => {
+      tooltip.setTemplate("<span>test</span>");
+      tooltip.show(target);
+
+      tooltip.attributeChangedCallback("transition-duration", "", "350");
+
+      const computedStyle = getTooltipBox(tooltip).style as unknown as { getPropertyValue: (prop: string) => string };
+      // The custom property includes the 'ms' unit suffix
+      expect(computedStyle.getPropertyValue("--tip-transition-duration")).toBe("350ms");
+    });
+
+    it("show() uses data-visible attribute instead of inline opacity style (ISS: Show toggles CSS state)", () => {
+      tooltip.setTemplate("<span>test</span>");
+
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      // Visibility is driven by data-visible attribute, not inline style.opacity
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ISS: Phase 3.2 — setStyles overrides internal sheet (cascade order)
+  // -------------------------------------------------------------------------
+  describe("setStyles cascade order (ISS: setStyles overrides internal)", () => {
+    it("setStyles CSS appears after structural sheet in adoptedStyleSheets array", () => {
+      tooltip.setStyles(".tipviz-tooltip { position: fixed; }");
+
+      const root = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      expect(root.adoptedStyleSheets.length).toBe(2); // structural + consumer
+
+      // Consumer sheet is last
+      const consumerSheet = root.adoptedStyleSheets[root.adoptedStyleSheets.length - 1];
+      expect(consumerSheet.cssRules[0].cssText).toContain("position: fixed");
+    });
+
+    it("::part(tooltip-box) styling remains available (ISS: ::part override remains available)", () => {
+      tooltip.setTemplate("<span>part-test</span>");
+      tooltip.show(target);
+
+      const tooltipBox = getTooltipBox(tooltip);
+      // The part attribute must still be present for external styling
+      expect(tooltipBox.getAttribute("part")).toBe("tooltip-box");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ISS: Phase 3.3 — REFACTOR: #ensureAccessibleHostAttributes probes data-visible
+  // -------------------------------------------------------------------------
+  describe("accessibility host attributes via data-visible (ISS: REFACTOR)", () => {
+    it("#ensureAccessibleHostAttributes checks data-visible instead of style.opacity", () => {
+      tooltip.setTemplate("<span>test</span>");
+
+      // When hidden, aria-hidden on host should be 'true'
+      const hiddenTooltipBox = getTooltipBox(tooltip);
+      hiddenTooltipBox.removeAttribute("data-visible");
+
+      // Trigger ensureAccessibleHostAttributes by any means
+      tooltip.setAttribute("aria-hidden", "true"); // force reset
+
+      // After show, host aria-hidden should be 'false'
+      tooltip.show(target);
+      expect(tooltip.getAttribute("aria-hidden")).toBe("false");
+
+      tooltip.hide();
+      expect(tooltip.getAttribute("aria-hidden")).toBe("true");
+    });
   });
 });

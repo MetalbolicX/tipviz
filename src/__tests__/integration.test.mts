@@ -146,4 +146,94 @@ describe("integration: src/index.mts", () => {
 
     document.body.textContent = "";
   });
+
+  // -------------------------------------------------------------------------
+  // MDA: Phase 4 — Integration tests for multi-document adoption
+  // -------------------------------------------------------------------------
+  describe("multi-document adoption integration", () => {
+    it("re-creates structural sheet in adopting document and preserves data-visible state (MDA: Adopted after consumer styles were applied)", () => {
+      // Create foreign document for adoption scenario
+      const foreignDoc = document.implementation.createHTMLDocument();
+      Object.defineProperty(foreignDoc, "defaultView", { configurable: true, value: null });
+
+      // Create tooltip and target directly in the foreign document
+      const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
+      const targetEl = foreignDoc.createElement("div");
+      foreignDoc.body.appendChild(tooltip);
+      foreignDoc.body.appendChild(targetEl);
+
+      tooltip.setTemplate("<span>adopted</span>");
+      tooltip.setStyles(".tipviz-tooltip { color: blue; }");
+
+      // Show the tooltip to establish data-visible state
+      vi.spyOn(targetEl, "getBoundingClientRect").mockReturnValue({
+        bottom: 130, height: 30, left: 200, right: 280,
+        toJSON: () => ({}), top: 100, width: 80, x: 200, y: 100,
+      });
+      const sr = tooltip.shadowRoot;
+      if (!sr) throw new Error("expected shadow root");
+      const tooltipBox = sr.querySelector<HTMLDivElement>(".tipviz-tooltip");
+      if (!tooltipBox) throw new Error("expected tooltip box");
+      vi.spyOn(tooltipBox, "getBoundingClientRect").mockReturnValue({
+        bottom: 20, height: 20, left: 0, right: 60,
+        toJSON: () => ({}), top: 0, width: 60, x: 0, y: 0,
+      });
+
+      tooltip.show(targetEl);
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
+      expect(targetEl.getAttribute("aria-describedby")).toContain(tooltip.id);
+
+      // Capture structural sheet before re-adoption
+      const rootBefore = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      const structuralSheetBefore = rootBefore.adoptedStyleSheets[0];
+
+      // Simulate re-adoption (remove and re-append triggers adoptedCallback)
+      foreignDoc.body.removeChild(tooltip);
+      foreignDoc.body.appendChild(tooltip);
+      tooltip.adoptedCallback();
+
+      // Verify structural sheet is re-created in new document (fresh instance, not same reference)
+      const rootAfter = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      expect(rootAfter.adoptedStyleSheets.length).toBeGreaterThan(0);
+      expect(rootAfter.adoptedStyleSheets[0]).not.toBe(structuralSheetBefore);
+
+      // Verify the new structural sheet contains the behavioral CSS selector
+      const structuralCss = rootAfter.adoptedStyleSheets[0].cssRules[0].cssText;
+      expect(structuralCss).toContain("data-tipviz-tooltip-box");
+
+      // Verify aria-describedby is rebound to the active target in new document
+      expect(targetEl.getAttribute("aria-describedby")).toContain(tooltip.id);
+
+      // Verify data-visible state is preserved through adoption
+      expect(tooltipBox.getAttribute("data-visible")).toBe("true");
+
+      document.body.textContent = "";
+    });
+
+    it("cascade order: structural sheet at index 0, consumer sheet at index 1 (ISS: setStyles overrides an internal declaration)", () => {
+      const tooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
+      document.body.appendChild(tooltip);
+
+      tooltip.setTemplate("<span>cascade</span>");
+      tooltip.setStyles(".tipviz-tooltip { color: red; }");
+
+      const root = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+
+      // Structural sheet must be at index 0 (first — internal base)
+      // Consumer sheet must be at index 1 (last — wins cascade)
+      expect(root.adoptedStyleSheets.length).toBe(2);
+
+      // Verify structural sheet content is present at index 0
+      // The structural sheet contains :where([data-tipviz-tooltip-box])
+      const structuralCss = root.adoptedStyleSheets[0].cssRules[0].cssText;
+      expect(structuralCss).toContain("data-tipviz-tooltip-box");
+
+      // Verify consumer sheet content is present at index 1
+      const consumerCss = root.adoptedStyleSheets[1].cssRules[0].cssText;
+      expect(consumerCss).toContain("color");
+      expect(consumerCss).toContain("red");
+
+      document.body.textContent = "";
+    });
+  });
 });

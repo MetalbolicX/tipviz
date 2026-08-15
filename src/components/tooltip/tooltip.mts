@@ -52,7 +52,7 @@ export class TipVizTooltip extends HTMLElement {
       pointerEvents: "none",
       position: "absolute",
       top: "0px",
-      transition: `opacity ${this.#transitionDuration}ms`,
+      transition: `opacity ${String(this.#transitionDuration)}ms`,
     });
 
     this.#shadow.appendChild(this.#tooltipDiv);
@@ -132,7 +132,7 @@ export class TipVizTooltip extends HTMLElement {
       link.setAttribute("data-tipviz-link", "");
       link.setAttribute("rel", "stylesheet");
       link.addEventListener("error", () => {
-        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${link?.href}`);
+        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${String(link?.href ?? "")}`);
       });
       this.#shadow.insertBefore(link, this.#tooltipDiv);
     }
@@ -267,8 +267,8 @@ export class TipVizTooltip extends HTMLElement {
     const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
     const coordinates = getCoordinates(dir, targetRect, tooltipRect);
 
-    this.#tooltipDiv.style.left = `${coordinates.left + offsetX + window.scrollX}px`;
-    this.#tooltipDiv.style.top = `${coordinates.top + offsetY + window.scrollY}px`;
+    this.#tooltipDiv.style.left = `${String(coordinates.left + offsetX + window.scrollX)}px`;
+    this.#tooltipDiv.style.top = `${String(coordinates.top + offsetY + window.scrollY)}px`;
 
     this.#tooltipDiv.style.opacity = "1";
     this.#tooltipDiv.style.pointerEvents = "all";
@@ -342,7 +342,7 @@ export class TipVizTooltip extends HTMLElement {
     }
 
     TipVizTooltip.#idCounter += 1;
-    this.id = `tip-viz-tooltip-${TipVizTooltip.#idCounter}`;
+    this.id = `tip-viz-tooltip-${String(TipVizTooltip.#idCounter)}`;
   }
 
   #removeAdoptedStylesheet() {
@@ -383,6 +383,6 @@ export class TipVizTooltip extends HTMLElement {
       this.#transitionDuration = nextDuration;
     }
 
-    this.#tooltipDiv.style.transition = `opacity ${this.#transitionDuration}ms`;
+    this.#tooltipDiv.style.transition = `opacity ${String(this.#transitionDuration)}ms`;
   }
 }

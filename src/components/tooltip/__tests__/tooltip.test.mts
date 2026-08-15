@@ -531,33 +531,40 @@ describe("TipVizTooltip", () => {
     });
 
     it("falls back to style element when adopted into document without constructable sheets", () => {
-      // Verify that adoption re-inserts stylesheet resources (structural + consumer).
-      // The structural-styles.test.mts "falls back to <style data-tipviz-structural>"
-      // test already covers the CSStyleSheet-constructor-throws fallback path.
-      // Here we verify the adoption path maintains/re-inserts the sheets.
-      const fallbackTooltip = document.createElement("tip-viz-tooltip") as TipVizTooltip;
-      fallbackTooltip.setTemplate("<div data-bind=\"label\"></div>");
-      fallbackTooltip.setStyles(".tipviz-tooltip { color: red; }");
-      document.body.appendChild(fallbackTooltip);
+      const originalCSSStyleSheet = globalThis.CSSStyleSheet;
+      const mockGlobal = globalThis as typeof globalThis & {
+        CSSStyleSheet: typeof CSSStyleSheet;
+      };
+      mockGlobal.CSSStyleSheet = function () {
+        throw new Error("Constructable stylesheets not supported");
+      } as unknown as typeof CSSStyleSheet;
 
-      // Adopt into foreign document
-      const foreignDoc = document.implementation.createHTMLDocument();
-      foreignDoc.adoptNode(fallbackTooltip);
-      foreignDoc.body.appendChild(fallbackTooltip);
-      fallbackTooltip.adoptedCallback();
+      try {
+        tooltip.setTemplate("<span>fallback</span>");
+        tooltip.setStyles(".tipviz-tooltip { color: red; }");
 
-      const shadow = fallbackTooltip.shadowRoot;
-      const rootAfter = shadow as unknown as { adoptedStyleSheets: undefined | unknown[] };
-      const afterSheets = rootAfter.adoptedStyleSheets?.length ?? 0;
+        const foreignDoc = document.implementation.createHTMLDocument();
+        foreignDoc.adoptNode(tooltip);
+        foreignDoc.body.appendChild(tooltip);
+        tooltip.adoptedCallback();
 
-      // Adoption should preserve or re-insert structural + consumer sheets.
-      // In jsdom, adoptedStyleSheets may be reset after cross-document adoption
-      // (a known jsdom gap); the structural sheet is re-inserted by adoptedCallback.
-      expect(afterSheets).toBeGreaterThanOrEqual(1);
+        const shadow = tooltip.shadowRoot;
+        const structuralStyle = shadow?.querySelector("style[data-tipviz-structural]");
+        const consumerStyle = shadow?.querySelector("style[data-tipviz]");
+        const tooltipBox = getTooltipBox(tooltip);
 
-      // The structural-styles fallback test (structural-styles.test.mts) covers the
-      // CSStyleSheet-not-constructable path separately using a direct mock + insertStructuralStyles
-      // call, which is the definitive verification for the fallback scenario.
+        expect(structuralStyle).not.toBeNull();
+        expect(consumerStyle).not.toBeNull();
+        expect(structuralStyle?.getAttribute("data-tipviz-structural")).not.toBe(
+          consumerStyle?.getAttribute("data-tipviz"),
+        );
+        const structuralEl = structuralStyle as Node;
+        const consumerEl = consumerStyle as Node;
+        expect(structuralEl.compareDocumentPosition(consumerEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(tooltipBox.querySelector("span")?.textContent).toBe("fallback");
+      } finally {
+        mockGlobal.CSSStyleSheet = originalCSSStyleSheet;
+      }
     });
   });
 

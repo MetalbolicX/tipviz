@@ -87,6 +87,16 @@ export class TipVizTooltip extends HTMLElement {
       this.#structuralStyleEl = structural;
     }
 
+    // Re-apply consumer styles in the adopting document context.
+    // #stylesText is preserved through the disconnect/adopt transition
+    // (disconnectedCallback no longer wipes it). This uses the same
+    // CSSStyleSheet-or-<style> fallback path as setStyles() so constructable-
+    // sheet environments get an adopted sheet and environments without support
+    // get a <style data-tipviz> element — the fallback the RED test asserts.
+    if (this.#stylesText) {
+      this.#applyConsumerStyles();
+    }
+
     // Refresh described-by for the new document context
     this.#refreshDescribedBy();
 
@@ -157,15 +167,16 @@ export class TipVizTooltip extends HTMLElement {
     this.#removeInlineStyles();
     this.#removeStylesheetLink();
 
-    // WHY: Template/data are adoption state, not connection state.
+    // WHY: Template/data/styles are adoption state, not connection state.
     // Cross-document adoption fires disconnectedCallback then adoptedCallback.
-    // Clearing them here made show() fail after adoption with "No template set".
-    // Same-doc reconnect preserves state naturally since connectedCallback
-    // does not restore — the component doesn't wipe what it doesn't need to.
-    // #boundElements, #data, #templateHtml, #templateSet, and #tooltipDiv
-    // children are all preserved across disconnect/reconnect cycles.
+    // Clearing #stylesText here caused consumer styles to be lost after
+    // adoption — adoptedCallback never re-applied them. The physical removal
+    // of style elements from the old document is correct (clean exit), but
+    // the #stylesText string must survive so adoptedCallback can re-apply it
+    // in the new document context. #boundElements, #data, #templateHtml,
+    // #templateSet, #stylesText, and #tooltipDiv children are all adoption
+    // state that must persist across the disconnect/adopt transition.
 
-    this.#stylesText = "";
     if (this.#currentDirection) {
       this.#tooltipDiv.classList.remove(this.#currentDirection);
       this.#currentDirection = null;
@@ -288,29 +299,7 @@ export class TipVizTooltip extends HTMLElement {
 
     if (!this.#stylesText) return;
 
-    try {
-      /**
-       *
-       */
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(this.#stylesText);
-
-      /**
-       *
-       */
-      const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
-      root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-      this.#adoptedStylesheet = sheet;
-    } catch (error) {
-      /**
-       *
-       */
-      const style = document.createElement("style");
-      style.setAttribute("data-tipviz", "");
-      style.textContent = this.#stylesText;
-      this.#shadow.appendChild(style);
-      console.debug("[tip-viz-tooltip] adoptedStyleSheets unavailable, using <style> injection:", error);
-    }
+    this.#applyConsumerStyles();
   }
 
   /**
@@ -413,6 +402,37 @@ export class TipVizTooltip extends HTMLElement {
       composed: true,
       detail: { data: this.#data, direction: dir, position: coordinates, target },
     }));
+  }
+
+  /**
+   * Re-applies consumer CSS using the same adopted-sheet-or-<style> fallback
+   * path as setStyles(). Used by adoptedCallback to re-establish consumer
+   * styles in the adopting document's context.
+   */
+  #applyConsumerStyles() {
+    try {
+      /**
+       *
+       */
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(this.#stylesText);
+
+      /**
+       *
+       */
+      const root = this.#shadow as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+      this.#adoptedStylesheet = sheet;
+    } catch (error) {
+      /**
+       *
+       */
+      const style = document.createElement("style");
+      style.setAttribute("data-tipviz", "1");
+      style.textContent = this.#stylesText;
+      this.#shadow.appendChild(style);
+      console.debug("[tip-viz-tooltip] adoptedStyleSheets unavailable, using <style> injection:", error);
+    }
   }
 
   /**

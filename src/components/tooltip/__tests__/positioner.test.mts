@@ -30,55 +30,55 @@ describe("getCoordinates — direct-call unit tests", () => {
     const coords = getCoordinates("n", targetRect, tooltipRect);
     // top = t.top - tt.height = 100 - 10 = 90
     // left = t.left + t.width/2 - tt.width/2 = 50 + 40 - 10 = 80
-    expect(coords).toEqual({ top: 90, left: 80 });
+    expect(coords).toEqual({ left: 80, top: 90 });
   });
 
   it("positions tooltip to the south (s)", () => {
     const coords = getCoordinates("s", targetRect, tooltipRect);
     // top = t.bottom = 140
     // left = t.left + t.width/2 - tt.width/2 = 50 + 40 - 10 = 80
-    expect(coords).toEqual({ top: 140, left: 80 });
+    expect(coords).toEqual({ left: 80, top: 140 });
   });
 
   it("positions tooltip to the east (e)", () => {
     const coords = getCoordinates("e", targetRect, tooltipRect);
     // top = t.top + t.height/2 - tt.height/2 = 100 + 20 - 5 = 115
     // left = t.right = 130
-    expect(coords).toEqual({ top: 115, left: 130 });
+    expect(coords).toEqual({ left: 130, top: 115 });
   });
 
   it("positions tooltip to the west (w)", () => {
     const coords = getCoordinates("w", targetRect, tooltipRect);
     // top = t.top + t.height/2 - tt.height/2 = 100 + 20 - 5 = 115
     // left = t.left - tt.width = 50 - 20 = 30
-    expect(coords).toEqual({ top: 115, left: 30 });
+    expect(coords).toEqual({ left: 30, top: 115 });
   });
 
   it("positions tooltip to the northwest (nw)", () => {
     const coords = getCoordinates("nw", targetRect, tooltipRect);
     // top = t.top - tt.height = 100 - 10 = 90
     // left = t.left - tt.width = 50 - 20 = 30
-    expect(coords).toEqual({ top: 90, left: 30 });
+    expect(coords).toEqual({ left: 30, top: 90 });
   });
 
   it("positions tooltip to the northeast (ne)", () => {
     const coords = getCoordinates("ne", targetRect, tooltipRect);
     // top = t.top - tt.height = 100 - 10 = 90
     // left = t.right = 130
-    expect(coords).toEqual({ top: 90, left: 130 });
+    expect(coords).toEqual({ left: 130, top: 90 });
   });
 
   it("positions tooltip to the southwest (sw)", () => {
     const coords = getCoordinates("sw", targetRect, tooltipRect);
     // top = t.bottom = 140
     // left = t.left - tt.width = 50 - 20 = 30
-    expect(coords).toEqual({ top: 140, left: 30 });
+    expect(coords).toEqual({ left: 30, top: 140 });
   });
 
   it("positions tooltip to the southeast (se)", () => {
     const coords = getCoordinates("se", targetRect, tooltipRect);
     // top = t.bottom = 140
     // left = t.right = 130
-    expect(coords).toEqual({ top: 140, left: 130 });
+    expect(coords).toEqual({ left: 130, top: 140 });
   });
 });

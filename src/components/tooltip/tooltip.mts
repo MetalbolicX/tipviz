@@ -55,9 +55,6 @@ export class TipVizTooltip extends HTMLElement {
     this.#shadow.appendChild(this.#tooltipDiv);
   }
 
-  #directionCallback: DirectionFn = () => defaultDirection;
-  #offsetCallback: OffsetCallback = () => defaultOffset;
-
   public attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "transition-duration" && newValue) {
       this.#updateTransitionDuration(newValue);
@@ -81,6 +78,9 @@ export class TipVizTooltip extends HTMLElement {
     const stylesheet = this.getAttribute("stylesheet");
     if (stylesheet) this.loadStylesheet(stylesheet);
   }
+
+  #directionCallback: DirectionFn = () => defaultDirection;
+  #offsetCallback: OffsetCallback = () => defaultOffset;
 
   public disconnectedCallback() {
     this.#clearDescribedBy();

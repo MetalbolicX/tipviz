@@ -1,5 +1,5 @@
-import { sanitizeHtml } from "../sanitizer.mjs";
 import { sanitizerConfig } from "../constants.mjs";
+import { sanitizeHtml } from "../sanitizer.mjs";
 
 /**
  * Parses HTML string into a DOM Document for querying.
@@ -66,11 +66,11 @@ describe("sanitizeHtml — direct-call unit tests", () => {
   describe("defense-in-depth — attribute rule works when element survives", () => {
     it("strips srcdoc from iframe when iframe is NOT in removeElements", () => {
       const config = {
+        removeAttributes: ["srcdoc", "formaction"],
         removeElements: [
           "script", "object", "embed", "link", "meta", "base", "form",
           "input", "button", "textarea", "select",
         ],
-        removeAttributes: ["srcdoc", "formaction"],
       };
       const result = sanitizeHtml(
         "<iframe srcdoc='<h1>content</h1>' width='200'></iframe>",
@@ -84,11 +84,11 @@ describe("sanitizeHtml — direct-call unit tests", () => {
 
     it("strips formaction from button when button is NOT in removeElements", () => {
       const config = {
+        removeAttributes: ["srcdoc", "formaction"],
         removeElements: [
           "script", "iframe", "object", "embed", "link", "meta", "base",
           "form", "input", "textarea", "select",
         ],
-        removeAttributes: ["srcdoc", "formaction"],
       };
       const result = sanitizeHtml(
         "<button formaction='https://evil.com'>submit</button>",

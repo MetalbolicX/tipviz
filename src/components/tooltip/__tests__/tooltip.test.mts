@@ -266,6 +266,26 @@ describe("TipVizTooltip", () => {
       expect(spans[1].textContent).toBe("same");
     });
 
+    it("renders a plain-text template", () => {
+      tooltip.setTemplate("Hello World");
+      expect(getTooltipBox(tooltip).textContent).toBe("Hello World");
+    });
+
+    it("preserves top-level text mixed with elements", () => {
+      tooltip.setTemplate("<strong>Tip</strong>: 42 items");
+      const box = getTooltipBox(tooltip);
+      expect(box.textContent).toBe("Tip: 42 items");
+      expect(box.querySelector("strong")?.textContent).toBe("Tip");
+    });
+
+    it("preserves top-level text when re-rendering via setSanitizerConfig", () => {
+      tooltip.setTemplate("Value: <span data-bind='v'></span>");
+      tooltip.setData({ v: "42" });
+      tooltip.setSanitizerConfig({});
+      const box = getTooltipBox(tooltip);
+      expect(box.textContent).toBe("Value: 42");
+    });
+
     it("uses custom sanitizer config to filter additional elements", () => {
       tooltip.setSanitizerConfig({ removeElements: ["b", "i"] });
       tooltip.setTemplate("<div><b>bold</b><i>italic</i><p>para</p></div>");

@@ -309,7 +309,7 @@ export class TipVizTooltip extends HTMLElement {
       const fragment = this.ownerDocument
         .createRange()
         .createContextualFragment(sanitizeHtml(this.#templateHtml, this.#sanitizerConfig));
-      this.#tooltipDiv.replaceChildren(...fragment.children);
+      this.#tooltipDiv.replaceChildren(...fragment.childNodes);
       this.#cacheBoundElements();
       if (Object.keys(this.#data).length > 0) {
         this.#applyDataToBoundElements();
@@ -351,7 +351,7 @@ export class TipVizTooltip extends HTMLElement {
     const fragment = this.ownerDocument
       .createRange()
       .createContextualFragment(sanitizeHtml(htmlString, this.#sanitizerConfig));
-    this.#tooltipDiv.replaceChildren(...fragment.children);
+    this.#tooltipDiv.replaceChildren(...fragment.childNodes);
     this.#cacheBoundElements();
     this.#templateSet = true;
 

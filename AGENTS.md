@@ -66,6 +66,10 @@ tip.setSanitizerConfig({ allowCustomElements: true }); // partial configs merge 
 // <tip-viz-tooltip template='<div data-bind="label"></div>' data='{"label":"My Label"}'></tip-viz-tooltip>
 ```
 
+**Data semantics:** `setData()` merges shallowly into the existing record;
+setting the `data` HTML attribute replaces the entire record. Mixing both
+APIs means a later `data` attribute value drops keys set via `setData()`.
+
 **Callbacks (settable after construction):**
 ```ts
 tip.setDirection<MyData>((data, target) => "top");  // n | s | e | w | nw | ne | sw | se

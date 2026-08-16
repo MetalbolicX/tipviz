@@ -148,6 +148,17 @@ describe("TipVizTooltip", () => {
       expect(bSpan?.textContent).toBe("2");
     });
 
+    it("setData merges shallowly (counterpart to data attribute replace)", () => {
+      tooltip.setTemplate("<span data-bind='a'></span><span data-bind='b'></span><span data-bind='c'></span>");
+      tooltip.setData({ a: 1, b: 2 });
+      tooltip.setData({ c: 3 });
+
+      const box = getTooltipBox(tooltip);
+      expect(box.querySelector("[data-bind='a']")?.textContent).toBe("1");
+      expect(box.querySelector("[data-bind='b']")?.textContent).toBe("2");
+      expect(box.querySelector("[data-bind='c']")?.textContent).toBe("3");
+    });
+
     it("updates tooltip when data attribute is set via setAttribute after show", () => {
       tooltip.setTemplate("<span data-bind='label'></span>");
       tooltip.show(target);

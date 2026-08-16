@@ -54,7 +54,7 @@ const tooltip = document.getElementById('tooltip');
     </script>
     ```
 
-- **`setData`**: Merges the provided data into the internal store and updates every `[data-bind]` element whose key matches. If no template has been set yet, the data is stored and applied immediately when `setTemplate()` is called later.
+- **`setData`**: Merges the provided data into the internal store and updates every `[data-bind]` element whose key matches. If no template has been set yet, the data is stored and applied immediately when `setTemplate()` is called later. `setData()` performs a shallow merge into the existing data record — keys not present in the argument are preserved.
 
     ```ts
     setData(data: Record<string, string | number>): void;
@@ -68,6 +68,9 @@ const tooltip = document.getElementById('tooltip');
     ```
 
     > [!Note] Missing keys in the template emit a `console.warn`. Call `setData()` and `show()` in any order — data is stored until a template is available.
+
+> [!Note]
+> Setting the `data` attribute (e.g. via `setAttribute("data", JSON.stringify(...))` or the HTML attribute itself) replaces the entire data record. This differs from `setData()`, which merges. After an attribute update, keys previously supplied only via `setData()` are dropped.
 
 - **`setDirection`**: Sets the callback that determines the placement `Direction` for a given `data` and `target`.
 

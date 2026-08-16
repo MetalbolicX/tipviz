@@ -486,6 +486,21 @@ describe("TipVizTooltip", () => {
     expect(link).toBeNull();
   });
 
+  it("loadStylesheet error handler reports the failing URL", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+      return undefined;
+    });
+    try {
+      tooltip.loadStylesheet("/definitely-missing.css");
+      const link = tooltip.shadowRoot?.querySelector("link[data-tipviz-link]");
+      link?.dispatchEvent(new Event("error"));
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(String(warnSpy.mock.calls[0]?.[0])).toContain("/definitely-missing.css");
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   // -------------------------------------------------------------------------
   // MDA: Phase 2.1 — ownerDocument.body substitution + null-guard
   // -------------------------------------------------------------------------

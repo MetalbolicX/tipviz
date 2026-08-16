@@ -258,12 +258,11 @@ export class TipVizTooltip extends HTMLElement {
 
     let link = this.#shadow.querySelector<HTMLLinkElement>("link[data-tipviz-link]");
     if (!link) {
-      link = document.createElement("link");
+      link = this.ownerDocument.createElement("link");
       link.setAttribute("data-tipviz-link", "");
       link.setAttribute("rel", "stylesheet");
-      const linkHref = link.href;
       link.addEventListener("error", () => {
-        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${linkHref}`);
+        console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${stylesheetUrl}`);
       });
       this.#shadow.insertBefore(link, this.#tooltipDiv);
     }
@@ -426,7 +425,7 @@ export class TipVizTooltip extends HTMLElement {
       setAdoptedStyleSheets(this.#shadow, [...getAdoptedStyleSheets(this.#shadow), sheet]);
       this.#adoptedStylesheet = sheet;
     } catch (error) {
-      const style = document.createElement("style");
+      const style = this.ownerDocument.createElement("style");
       style.setAttribute("data-tipviz", "1");
       style.textContent = this.#stylesText;
       this.#shadow.appendChild(style);

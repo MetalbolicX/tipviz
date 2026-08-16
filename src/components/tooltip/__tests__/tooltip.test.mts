@@ -285,6 +285,14 @@ describe("TipVizTooltip", () => {
       expect(tooltipBox.querySelector("div")?.getAttribute("data-custom")).toBeNull();
       expect(tooltipBox.querySelector("div")?.getAttribute("data-custom")).toBeFalsy();
     });
+
+    it("setSanitizerConfig merges with defaults instead of replacing them", () => {
+      tooltip.setSanitizerConfig({});
+      tooltip.setTemplate("<script>evil()</script><span data-bind='a'></span>");
+
+      const tooltipBox = getTooltipBox(tooltip);
+      expect(tooltipBox.querySelector("script")).toBeNull();
+    });
   });
 
   describe("static tooltip (no setData)", () => {

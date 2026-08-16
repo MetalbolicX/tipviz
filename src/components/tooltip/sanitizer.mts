@@ -44,12 +44,23 @@ export function sanitizeHtml(html: string, config: SanitizerConfig): string {
       }
 
       if (!shouldkill && urlAttrs.has(attrName)) {
-        const value = node.getAttribute(attrName)?.trim().toLowerCase() ?? "";
-        if (value.startsWith("javascript:") || value.startsWith("vbscript:")) {
+        const raw = node.getAttribute(attrName) ?? "";
+        // Browsers strip tab/newline/CR before parsing URLs; normalizing all
+        // whitespace here keeps the scheme check from being bypassed with
+        // values like "java\tscript:...".
+        const normalized = raw.replace(/\s+/g, "").toLowerCase();
+        if (normalized.startsWith("javascript:") || normalized.startsWith("vbscript:")) {
           shouldkill = true;
         }
-        if (value.startsWith("data:") && !value.startsWith("data:image/")) {
+        if (normalized.startsWith("data:") && !normalized.startsWith("data:image/")) {
           shouldkill = true;
+        }
+      }
+
+      if (!shouldkill && attrName === "style") {
+        const style = node.getAttribute("style") ?? "";
+        if (/url\(/i.test(style)) {
+          node.setAttribute("style", style.replace(/url\([^)]*\)/gi, "url()"));
         }
       }
 

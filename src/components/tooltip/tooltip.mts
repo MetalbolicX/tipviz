@@ -301,7 +301,9 @@ export class TipVizTooltip extends HTMLElement {
    *
    */
   public setSanitizerConfig(config: SanitizerConfig): void {
-    this.#sanitizerConfig = config;
+    // WHY: partial configs must not silently drop the default element and
+    // attribute denylists — the documented usage passes a single flag.
+    this.#sanitizerConfig = { ...sanitizerConfig, ...config };
 
     if (this.#templateSet && this.#templateHtml) {
       const fragment = this.ownerDocument

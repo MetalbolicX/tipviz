@@ -242,7 +242,7 @@ The `TipVizTooltip` component includes a built-in HTML sanitizer that runs autom
 
 - **Removes dangerous elements**: `<script>`, `<iframe>`, `<object>`, `<embed>`, `<link>`, `<meta>`, `<base>`, `<form>`, `<input>`, `<button>`, `<textarea>`, `<select>`
 - **Strips event handler attributes**: Any attribute matching `on*` (e.g., `onclick`, `onerror`, `onload`), plus `srcdoc` and `formaction`
-- **Blocks malicious URI schemes**: Removes `javascript:` URIs and `data:` URIs that are not images (`data:image/*`)
+- **Blocks malicious URI schemes**: Removes `javascript:` and `vbscript:` URIs (including whitespace-obfuscated schemes like `java\tscript:`) and all non-image `data:` URIs
 - **Strips `url()` from inline styles**: All CSS `url()` calls in `style` attributes are replaced with empty `url()` tokens to prevent CSS-based data exfiltration attacks
 
 #### Example: CSS URL Injection Prevention

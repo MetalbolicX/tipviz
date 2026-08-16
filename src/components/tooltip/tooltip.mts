@@ -59,9 +59,6 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.setAttribute("part", "tooltip-box");
     this.#tooltipDiv.setAttribute("role", "tooltip");
 
-    /**
-     *
-     */
     const structural = insertStructuralStyles(this.#shadow, this.ownerDocument);
     if (structural instanceof CSSStyleSheet) {
       this.#structuralSheet = structural;
@@ -83,9 +80,6 @@ export class TipVizTooltip extends HTMLElement {
 
     // Re-insert structural stylesheet in the adopting document
     this.#removeStructuralStylesheet();
-    /**
-     *
-     */
     const structural = insertStructuralStyles(this.#shadow, this.ownerDocument);
     if (structural instanceof CSSStyleSheet) {
       this.#structuralSheet = structural;
@@ -153,15 +147,9 @@ export class TipVizTooltip extends HTMLElement {
       this.ownerDocument.body.appendChild(this);
     }
 
-    /**
-     *
-     */
     const duration = this.getAttribute("transition-duration");
     if (duration) this.#updateTransitionDuration(duration);
 
-    /**
-     *
-     */
     const stylesheet = this.getAttribute("stylesheet");
     if (stylesheet) this.loadStylesheet(stylesheet);
   }
@@ -218,26 +206,17 @@ export class TipVizTooltip extends HTMLElement {
     this.#removeInlineStyles();
     this.#removeStylesheetLink();
 
-    /**
-     *
-     */
     const stylesheetUrl = url.trim();
     if (!stylesheetUrl) {
       this.#removeStylesheetLink();
       return;
     }
 
-    /**
-     *
-     */
     let link = this.#shadow.querySelector<HTMLLinkElement>("link[data-tipviz-link]");
     if (!link) {
       link = document.createElement("link");
       link.setAttribute("data-tipviz-link", "");
       link.setAttribute("rel", "stylesheet");
-      /**
-       *
-       */
       const linkHref = link.href;
       link.addEventListener("error", () => {
         console.warn(`[tip-viz-tooltip] Failed to load stylesheet: ${linkHref}`);
@@ -281,9 +260,6 @@ export class TipVizTooltip extends HTMLElement {
     this.#sanitizerConfig = config;
 
     if (this.#templateSet && this.#templateHtml) {
-      /**
-       *
-       */
       const fragment = this.ownerDocument
         .createRange()
         .createContextualFragment(sanitizeHtml(this.#templateHtml, this.#sanitizerConfig));
@@ -326,9 +302,6 @@ export class TipVizTooltip extends HTMLElement {
    */
   public setTemplate(htmlString: string): void {
     this.#templateHtml = htmlString;
-    /**
-     *
-     */
     const fragment = this.ownerDocument
       .createRange()
       .createContextualFragment(sanitizeHtml(htmlString, this.#sanitizerConfig));
@@ -363,13 +336,7 @@ export class TipVizTooltip extends HTMLElement {
       return;
     }
 
-    /**
-     *
-     */
     const dir = this.#directionCallback(this.#data, target);
-    /**
-     *
-     */
     const [offsetX, offsetY] = this.#offsetCallback(this.#data, target);
 
     if (this.#currentDirection && this.#currentDirection !== dir) {
@@ -378,24 +345,12 @@ export class TipVizTooltip extends HTMLElement {
     this.#tooltipDiv.classList.add(dir);
     this.#currentDirection = dir;
 
-    /**
-     *
-     */
     const targetRect = target.getBoundingClientRect();
 
     // Forces synchronous layout recalc after template/data changes
-    /**
-     *
-     */
     const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
-    /**
-     *
-     */
     const coordinates = getCoordinates(dir, targetRect, tooltipRect);
 
-    /**
-     *
-     */
     const view = this.ownerDocument.defaultView ?? { scrollX: 0, scrollY: 0 };
     this.#tooltipDiv.style.left = `${String(coordinates.left + offsetX + view.scrollX)}px`;
     this.#tooltipDiv.style.top = `${String(coordinates.top + offsetY + view.scrollY)}px`;
@@ -419,18 +374,12 @@ export class TipVizTooltip extends HTMLElement {
    */
   #applyConsumerStyles() {
     try {
-      /**
-       *
-       */
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(this.#stylesText);
 
       setAdoptedStyleSheets(this.#shadow, [...getAdoptedStyleSheets(this.#shadow), sheet]);
       this.#adoptedStylesheet = sheet;
     } catch (error) {
-      /**
-       *
-       */
       const style = document.createElement("style");
       style.setAttribute("data-tipviz", "1");
       style.textContent = this.#stylesText;
@@ -440,36 +389,13 @@ export class TipVizTooltip extends HTMLElement {
   }
 
   /**
-   * Injects consumer CSS as a <style> element into the shadow root.
-   * Used exclusively during cross-document adoption where constructable
-   * CSSStyleSheet references are silently dropped per WHATWG adoptedStyleSheets
-   * document-scoping rules. <style> carries only text and survives adoption.
-   */
-  #injectConsumerStyleElement() {
-    this.#removeInlineStyles();
-    const style = this.ownerDocument.createElement("style");
-    style.setAttribute("data-tipviz", "1");
-    style.textContent = this.#stylesText;
-    this.#shadow.appendChild(style);
-  }
-
-  /**
    *
    */
   #applyDataToBoundElements(): void {
-    for (/**
-          *
-          */
-    const [key, value] of Object.entries(this.#data)) {
-      /**
-       *
-       */
+    for (const [key, value] of Object.entries(this.#data)) {
       const elements = this.#boundElements.get(key);
       if (elements) {
-        for (/**
-              *
-              */
-        const el of elements) {
+        for (const el of elements) {
           el.textContent = String(value);
         }
       } else {
@@ -484,23 +410,11 @@ export class TipVizTooltip extends HTMLElement {
   #cacheBoundElements(): void {
     this.#boundElements.clear();
 
-    /**
-     *
-     */
     const nodes = this.#tooltipDiv.querySelectorAll<HTMLElement>("[data-bind]");
 
-    for (/**
-          *
-          */
-    const node of nodes) {
-      /**
-       *
-       */
+    for (const node of nodes) {
       const dataKey = node.dataset.bind;
       if (dataKey) {
-        /**
-         *
-         */
         const existing = this.#boundElements.get(dataKey);
         if (existing) {
           this.#boundElements.set(dataKey, [...existing, node]);
@@ -524,6 +438,9 @@ export class TipVizTooltip extends HTMLElement {
 
   // Clears the aria-describedby attribute WITHOUT clearing #activeTarget.
   // Used during adoption to preserve the target for re-resolution.
+  /**
+   *
+   */
   #clearDescribedByOnly() {
     if (!(this.#activeTarget instanceof HTMLElement)) {
       return;
@@ -549,6 +466,20 @@ export class TipVizTooltip extends HTMLElement {
 
     TipVizTooltip.#idCounter += 1;
     this.id = `tip-viz-tooltip-${String(TipVizTooltip.#idCounter)}`;
+  }
+
+  /**
+   * Injects consumer CSS as a <style> element into the shadow root.
+   * Used exclusively during cross-document adoption where constructable
+   * CSSStyleSheet references are silently dropped per WHATWG adoptedStyleSheets
+   * document-scoping rules. <style> carries only text and survives adoption.
+   */
+  #injectConsumerStyleElement() {
+    this.#removeInlineStyles();
+    const style = this.ownerDocument.createElement("style");
+    style.setAttribute("data-tipviz", "1");
+    style.textContent = this.#stylesText;
+    this.#shadow.appendChild(style);
   }
 
   /**
@@ -614,9 +545,6 @@ export class TipVizTooltip extends HTMLElement {
    *
    */
   #removeInlineStyles() {
-    /**
-     *
-     */
     const oldStyle = this.#shadow.querySelector("style[data-tipviz]");
     if (oldStyle) oldStyle.remove();
   }
@@ -642,9 +570,6 @@ export class TipVizTooltip extends HTMLElement {
    *
    */
   #removeStylesheetLink() {
-    /**
-     *
-     */
     const link = this.#shadow.querySelector("link[data-tipviz-link]");
     if (link) link.remove();
   }
@@ -669,9 +594,6 @@ export class TipVizTooltip extends HTMLElement {
    *
    */
   #updateTransitionDuration(duration: string) {
-    /**
-     *
-     */
     const nextDuration = parseInt(duration, 10);
     if (!Number.isNaN(nextDuration)) {
       this.#transitionDuration = nextDuration;

@@ -36,7 +36,14 @@
     "test:watch": "vitest",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "validate": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "prepublishOnly": "pnpm run validate",
+    "prepack": "pnpm run tsdown:build",
+    "publish:dry-run": "pnpm publish --dry-run"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "author": {
     "name": "José Martínez Santana"

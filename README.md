@@ -137,14 +137,35 @@ pnpm run build         # vite build (docs / demo)
 pnpm run tsdown:build  # library build → dist/ (cjs, es, umd, dts)
 pnpm run test          # unit + integration tests
 pnpm run test:watch    # watch mode
+pnpm run validate      # lint + typecheck + tests (reusable validation)
 ```
 
-Typecheck and lint (not wired to npm scripts):
+Typecheck and lint (also available as `pnpm run validate`):
 
 ```bash
 npx tsc --noEmit
 npx eslint src/
 ```
+
+### Release & publish workflow
+
+**Dry-run (local, no registry contact):**
+
+```bash
+pnpm run tsdown:build
+pnpm run validate
+pnpm run publish:dry-run
+```
+
+**Real publish (requires npm OTP + registry credentials):**
+
+```bash
+pnpm run tsdown:build   # triggered automatically by prepack
+pnpm run validate        # triggered automatically by prepublishOnly
+npm publish             # or: pnpm publish
+```
+
+> `prepublishOnly` and `prepack` run automatically on `npm publish`/`pnpm pack` so validation and the library build are guaranteed. Use `publish:dry-run` to inspect exactly what would be published before touching any registry.
 
 ---
 

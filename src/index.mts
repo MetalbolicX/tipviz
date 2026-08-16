@@ -1,3 +1,4 @@
+export { defineTooltip } from "./components/tooltip/index.mjs";
 export { TipVizTooltip } from "./components/tooltip/tooltip.mjs";
 
 import { TipVizTooltip as _T } from "./components/tooltip/tooltip.mjs";

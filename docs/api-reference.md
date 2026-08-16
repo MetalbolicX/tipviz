@@ -14,6 +14,8 @@ This page documents the public API, attributes, types and usage examples for the
 
 #### Observed attributes
 
+- `template` (string): optional; sets the tooltip HTML template with `[data-bind]` placeholders. Equivalent to calling `setTemplate()`.
+- `data` (string): optional; JSON string of initial data. Equivalent to calling `setData()` but replaces the entire record on attribute update.
 - `transition-duration` (number): optional; controls the fade duration for show/hide in milliseconds. Defaults to `200ms`.
 - `stylesheet` (string): optional; URL to a stylesheet that will be added inside the component's shadow root.
 - `no-auto-reposition` (boolean): optional; if present, the element will not be moved to `document.body` on connect. See [Automatic repositioning](#automatic-repositioning-to-documentbody) for details.
@@ -104,7 +106,7 @@ const tooltip = document.getElementById('tooltip');
    });
    ```
 
-- **`show`**: Positions the tooltip relative to the `target` element and reveals it. Data must be provided beforehand via `setData()`.
+- **`show`**: Positions the tooltip relative to the `target` element and reveals it. Data must be provided beforehand via `setData()`. Default direction is `"n"` (above target); default offset is `[0, 0]`.
 
    ```ts
    show(target: Element): void;
@@ -159,10 +161,10 @@ If you need to prevent this behavior, use the `no-auto-reposition` attribute:
 
 #### Lazy registration with `defineTooltip()`
 
-The package auto-registers `<tip-viz-tooltip>` on import. For lazy/async scenarios, use `defineTooltip()` from the sub-path export:
+The package auto-registers `<tip-viz-tooltip>` on import. For lazy/async scenarios, use `defineTooltip()` from the root export:
 
 ```ts
-import { defineTooltip } from "tipviz/components/tooltip";
+import { defineTooltip } from "tipviz";
 
 // Registers only if not already defined — safe to call multiple times
 await defineTooltip();

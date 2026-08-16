@@ -18,12 +18,10 @@ Tooltip positioning in data visualizations is deceptively hard. You need to trac
 
 ```mermaid
 flowchart LR
-    HOVER["mouseenter\non target"] --> CALL["tooltip.show(data, target)"]
-    CALL --> CB["#htmlCallback()\nget content"]
+    HOVER["mouseenter\non target"] --> CALL["tooltip.show(target)"]
     CALL --> CD["#directionCallback()\nget placement"]
     CALL --> CO["#offsetCallback()\nget [x, y]"]
-    CB --> POS["#getCoordinates()\ncalculate viewport position"]
-    CD --> POS
+    CD --> POS["#getCoordinates()\ncalculate viewport position"]
     CO --> POS
     POS --> RENDER["opacity = 1\ntooltip visible"]
     RENDER --> LEAVE["mouseleave\non target"]
@@ -31,8 +29,8 @@ flowchart LR
 ```
 
 1. Place `<tip-viz-tooltip>` in your HTML (anywhere — it auto-repositions to body)
-2. Call `tooltip.setHtml()`, `tooltip.setDirection()`, `tooltip.setOffset()` once to configure
-3. On hover, call `tooltip.show(data, targetElement)` — the component handles the rest
+2. Call `tooltip.setTemplate()`, `tooltip.setData()`, `tooltip.setDirection()`, `tooltip.setOffset()` once to configure
+3. On hover, call `tooltip.show(targetElement)` — the component handles the rest
 4. On leave, call `tooltip.hide()`
 
 ---

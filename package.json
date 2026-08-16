@@ -58,6 +58,8 @@
   "files": [
     "dist"
   ],
+  "unpkg": "dist/index.umd.js",
+  "jsdelivr": "dist/index.umd.js",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

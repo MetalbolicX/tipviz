@@ -63,7 +63,101 @@ describe("TipVizTooltip", () => {
   });
 
   it("has expected observed attributes", () => {
-    expect(TipVizTooltip.observedAttributes).toEqual(["transition-duration", "stylesheet", "no-auto-reposition"]);
+    expect(TipVizTooltip.observedAttributes).toEqual(["transition-duration", "stylesheet", "no-auto-reposition", "template", "data"]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Tier 1: Declarative attributes (template + data)
+  // -------------------------------------------------------------------------
+  describe("declarative template and data attributes", () => {
+    it("applies template from attribute on connect", () => {
+      const customTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      customTooltip.setAttribute("template", "<span data-bind='label'></span>");
+      customTooltip.setAttribute("data", JSON.stringify({ label: "from-attr" }));
+
+      document.body.appendChild(customTooltip);
+
+      const tooltipBox = getTooltipBox(customTooltip);
+      const boundSpan = tooltipBox.querySelector("[data-bind='label']");
+      expect(boundSpan?.textContent).toBe("from-attr");
+    });
+
+    it("applies data from attribute before template exists", () => {
+      const customTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      customTooltip.setAttribute("data", JSON.stringify({ label: "pending" }));
+      customTooltip.setAttribute("template", "<span data-bind='label'></span>");
+
+      document.body.appendChild(customTooltip);
+
+      const tooltipBox = getTooltipBox(customTooltip);
+      const boundSpan = tooltipBox.querySelector("[data-bind='label']");
+      expect(boundSpan?.textContent).toBe("pending");
+    });
+
+    it("strips script tags from template attribute", () => {
+      const customTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      customTooltip.setAttribute("template", "<script>alert(1)</script><span>safe</span>");
+
+      document.body.appendChild(customTooltip);
+
+      const tooltipBox = getTooltipBox(customTooltip);
+      expect(tooltipBox.querySelector("script")).toBeNull();
+      expect(tooltipBox.querySelector("span")?.textContent).toBe("safe");
+    });
+
+    it("logs error for invalid JSON in data attribute", () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+        return undefined;
+      });
+
+      const customTooltip = document.createElement(tooltipTag) as TipVizTooltip;
+      customTooltip.setAttribute("template", "<span>static</span>");
+      customTooltip.setAttribute("data", "not json");
+
+      document.body.appendChild(customTooltip);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        "[tip-viz-tooltip] invalid JSON in data attribute:",
+        "not json",
+      );
+
+      // Element must still be functional
+      const tooltipBox = getTooltipBox(customTooltip);
+      expect(tooltipBox.querySelector("span")?.textContent).toBe("static");
+
+      errorSpy.mockRestore();
+    });
+
+    it("data attribute replace semantics", () => {
+      // Use attributeChangedCallback directly to test replace semantics
+      // (setAttribute before connect may not synchronously fire attributeChangedCallback in jsdom)
+      tooltip.setTemplate("<span data-bind='a'></span><span data-bind='b'></span>");
+
+      // Simulate first data attribute being set via attributeChangedCallback
+      tooltip.attributeChangedCallback("data", "", JSON.stringify({ a: 1 }));
+      expect(getTooltipBox(tooltip).querySelector("[data-bind='a']")?.textContent).toBe("1");
+
+      // Simulate second data attribute replacing the first
+      tooltip.attributeChangedCallback("data", JSON.stringify({ a: 1 }), JSON.stringify({ b: 2 }));
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const aSpan = tooltipBox.querySelector("[data-bind='a']");
+      const bSpan = tooltipBox.querySelector("[data-bind='b']");
+      // Replace semantics: a should be gone, only b present
+      expect(aSpan?.textContent).toBe("");
+      expect(bSpan?.textContent).toBe("2");
+    });
+
+    it("updates tooltip when data attribute is set via setAttribute after show", () => {
+      tooltip.setTemplate("<span data-bind='label'></span>");
+      tooltip.show(target);
+
+      tooltip.setAttribute("data", JSON.stringify({ label: "updated-via-setAttribute" }));
+
+      const tooltipBox = getTooltipBox(tooltip);
+      const boundSpan = tooltipBox.querySelector("[data-bind='label']");
+      expect(boundSpan?.textContent).toBe("updated-via-setAttribute");
+    });
   });
 
   it("applies transition-duration from attribute on connect", () => {

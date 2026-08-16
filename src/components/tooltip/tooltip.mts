@@ -26,7 +26,7 @@ export class TipVizTooltip extends HTMLElement {
    *
    */
   public static get observedAttributes() {
-    return ["transition-duration", "stylesheet", "no-auto-reposition"];
+    return ["transition-duration", "stylesheet", "no-auto-reposition", "template", "data"];
   }
 
   static #idCounter = 0;
@@ -133,6 +133,29 @@ export class TipVizTooltip extends HTMLElement {
     if (name === "stylesheet" && newValue) {
       this.loadStylesheet(newValue);
     }
+
+    if (name === "template" && newValue) {
+      this.setTemplate(newValue);
+    }
+
+    if (name === "data" && newValue) {
+      try {
+        const parsed = JSON.parse(newValue) as Record<string, number | string>;
+        this.#data = { ...parsed };
+        if (this.#templateSet) {
+          // Replace semantics: clear all bound elements before applying new data
+          // so that removed keys don't leave stale textContent behind
+          for (const [, elements] of this.#boundElements) {
+            for (const el of elements) {
+              el.textContent = "";
+            }
+          }
+          this.#applyDataToBoundElements();
+        }
+      } catch {
+        console.error("[tip-viz-tooltip] invalid JSON in data attribute:", newValue);
+      }
+    }
   }
 
   /**
@@ -152,6 +175,27 @@ export class TipVizTooltip extends HTMLElement {
 
     const stylesheet = this.getAttribute("stylesheet");
     if (stylesheet) this.loadStylesheet(stylesheet);
+
+    const templateAttr = this.getAttribute("template");
+    if (templateAttr) this.setTemplate(templateAttr);
+
+    const dataAttr = this.getAttribute("data");
+    if (dataAttr) {
+      try {
+        const parsed = JSON.parse(dataAttr) as Record<string, number | string>;
+        this.#data = { ...parsed };
+        if (this.#templateSet) {
+          for (const [, elements] of this.#boundElements) {
+            for (const el of elements) {
+              el.textContent = "";
+            }
+          }
+          this.#applyDataToBoundElements();
+        }
+      } catch {
+        console.error("[tip-viz-tooltip] invalid JSON in data attribute:", dataAttr);
+      }
+    }
   }
 
   /**

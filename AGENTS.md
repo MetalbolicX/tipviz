@@ -61,6 +61,9 @@ const tip = document.querySelector("tip-viz-tooltip") as TipVizTooltip;
 tip.setTemplate('<div data-bind="label"></div>');  // template with data-bind placeholders
 tip.setData({ label: "My Label", value: 42 });    // data to interpolate into data-bind slots
 tip.setSanitizerConfig({ allowDataImages: true }); // optional sanitizer policy
+
+// Or via attributes (no JS required):
+// <tip-viz-tooltip template='<div data-bind="label"></div>' data='{"label":"My Label"}'></tip-viz-tooltip>
 ```
 
 **Callbacks (settable after construction):**

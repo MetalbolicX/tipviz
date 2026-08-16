@@ -28,6 +28,15 @@ Add rich, interactive tooltips to D3 charts or any DOM element with a few lines 
 <script src="https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.umd.js"></script>
 ```
 
+### Zero-JS setup
+
+No JavaScript required — set `template` and `data` as attributes:
+
+```html
+<tip-viz-tooltip template='<div data-bind="label"></div>' data='{"label":"Sales"}'></tip-viz-tooltip>
+<script src="https://cdn.jsdelivr.net/npm/tipviz@latest/dist/index.umd.js"></script>
+```
+
 **npm / pnpm / yarn / bun**:
 
 ```bash

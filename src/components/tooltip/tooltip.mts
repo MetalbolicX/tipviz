@@ -95,12 +95,18 @@ export class TipVizTooltip extends HTMLElement {
 
     // Re-apply consumer styles in the adopting document context.
     // #stylesText is preserved through the disconnect/adopt transition
-    // (disconnectedCallback no longer wipes it). This uses the same
-    // CSSStyleSheet-or-<style> fallback path as setStyles() so constructable-
-    // sheet environments get an adopted sheet and environments without support
-    // get a <style data-tipviz> element — the fallback the RED test asserts.
+    // (disconnectedCallback no longer wipes it).
+    //
+    // WHY always <style> fallback on adoption: adoptedStyleSheets is document-
+    // scoped per WHATWG. A CSSStyleSheet created in document A is silently
+    // dropped when assigned to a shadow root in document B (e.g. an iframe's
+    // contentDocument). This is NOT reproduced by jsdom, which is why the
+    // RED test is needed. The structural sheet avoids this by being re-created
+    // fresh in each insertStructuralStyles() call, but consumer sheets use the
+    // same pattern without that guarantee. <style> carries only CSS text and
+    // survives cross-document adoption without issue.
     if (this.#stylesText) {
-      this.#applyConsumerStyles();
+      this.#injectConsumerStyleElement();
     }
 
     // Refresh described-by for the new document context
@@ -431,6 +437,20 @@ export class TipVizTooltip extends HTMLElement {
       this.#shadow.appendChild(style);
       console.debug("[tip-viz-tooltip] adoptedStyleSheets unavailable, using <style> injection:", error);
     }
+  }
+
+  /**
+   * Injects consumer CSS as a <style> element into the shadow root.
+   * Used exclusively during cross-document adoption where constructable
+   * CSSStyleSheet references are silently dropped per WHATWG adoptedStyleSheets
+   * document-scoping rules. <style> carries only text and survives adoption.
+   */
+  #injectConsumerStyleElement() {
+    this.#removeInlineStyles();
+    const style = this.ownerDocument.createElement("style");
+    style.setAttribute("data-tipviz", "1");
+    style.textContent = this.#stylesText;
+    this.#shadow.appendChild(style);
   }
 
   /**

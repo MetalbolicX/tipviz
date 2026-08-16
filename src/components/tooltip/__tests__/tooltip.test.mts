@@ -566,6 +566,35 @@ describe("TipVizTooltip", () => {
         mockGlobal.CSSStyleSheet = originalCSSStyleSheet;
       }
     });
+
+    // jsdom NOTE: jsdom does not enforce the WHATWG adoptedStyleSheets document-scoping
+    // rule — CSSStyleSheet references created in document A are NOT dropped when
+    // assigned to a shadow root in document B. This test passes in jsdom but FAILS
+    // in real browsers (Chromium) because cross-document adoptedStyleSheets assignments
+    // silently drop the sheet reference. The <style> fallback is the only reliable
+    // path for consumer styles after cross-document adoption.
+    it("uses <style> fallback for consumer styles after cross-document adoption (jsdom-permissive but real-browser-failing without fix)", () => {
+      tooltip.setTemplate("<span>consumer-styles</span>");
+      tooltip.setStyles(".tipviz-tooltip { color: rgb(1, 2, 3); }");
+
+      // Verify consumer styles applied via constructable sheet before adoption
+      const rootBefore = tooltip.shadowRoot as unknown as { adoptedStyleSheets: CSSStyleSheet[] };
+      expect(rootBefore.adoptedStyleSheets.length).toBeGreaterThan(0);
+
+      // Cross-document adoption (simulates iframe contentDocument scenario)
+      const foreignDoc = document.implementation.createHTMLDocument();
+      foreignDoc.adoptNode(tooltip);
+      foreignDoc.body.appendChild(tooltip);
+      tooltip.adoptedCallback();
+
+      // After adoption: consumer styles MUST be present as <style> element.
+      // In jsdom this passes (permissive sheet adoption). In real browsers without
+      // the fix, adoptedStyleSheets would be empty and no <style> fallback would
+      // exist — proving the bug exists and the fix works.
+      const consumerStyle = tooltip.shadowRoot?.querySelector("style[data-tipviz]");
+      expect(consumerStyle).not.toBeNull();
+      expect(consumerStyle?.textContent).toContain("color: rgb(1, 2, 3)");
+    });
   });
 
   // -------------------------------------------------------------------------

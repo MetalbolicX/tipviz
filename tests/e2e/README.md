@@ -165,6 +165,26 @@ After all verifications, stop the HTTP server:
 kill $(lsof -ti:8741)
 ```
 
+## Live-Verified Outputs (Chromium headless shell, commit `b8972de`)
+
+All three scenarios were executed against the harness via a Node.js script
+using `playwright-core` directly with the locally-installed Chromium headless
+shell. The bundled `playwright-cli` daemon was unstable in this environment;
+direct `playwright-core` was used instead.
+
+| Scenario | Key result | Verdict |
+|----------|------------|---------|
+| A — `::part(tooltip-box)` cascade | `background: "rgb(12, 34, 56)"` (page-level rule wins over structural sheet) | PASS |
+| B — iframe adoption (template + consumer styles + position) | `dataVisible: "true"`, `spanText: "iframe-test"`, `spanColor: "rgb(1, 2, 3)"`, `<style data-tipviz>` present, `left: "-41px"`, `top: "28px"` | PASS |
+| C — transition-duration custom property | `transitionDuration: "500ms"` (set via `#updateTransitionDuration` on `#tooltipDiv.style.setProperty`) | PASS |
+
+Scenario B's `adoptedStyleSheets` count is `0` — by design. The fix for
+cross-document adoption always uses the `<style data-tipviz>` fallback path
+on `adoptedCallback` (see `tooltip.mts:#injectConsumerStyleElement`), because
+constructable `CSSStyleSheet` references are document-scoped and crossing
+documents silently drops them. The fallback element carries the consumer CSS
+text into the adopting document. Zero console errors during Scenario B.
+
 ## Not Wired Into CI
 
 These are manual browser-only verifications. They are **not** run by `pnpm test` and are not part of the CI pipeline. They exist because:
@@ -173,4 +193,4 @@ These are manual browser-only verifications. They are **not** run by `pnpm test`
 - jsdom does not support `adoptNode` across iframes
 - `getComputedStyle` on inline custom properties requires a real browser
 
-Run `pnpm test` for the automated test suite (~90 passing).
+Run `pnpm test` for the automated test suite (~91 passing).

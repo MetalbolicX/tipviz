@@ -50,6 +50,37 @@ design or test.
 | 007  | Close adoption test gaps [plans/007-close-adoption-test-gaps.md] | direct | P1 | S/M | 006 | DONE |
 | 008  | Browser e2e harness for ::part, adoption, and CSS variables [plans/008-browser-e2e-harness.md] | direct | P2 | M | 006 | DONE |
 | 009  | Polish tooltip internals [plans/009-polish-tooltip-internals.md] | direct | P2 | S/M | 006 | DONE |
+| 010  | Sanitizer data-URL policy + scheme/style hardening [plans/010-sanitizer-data-url-policy.md] | strict TDD | P1 | M | — | DONE (non-breaking override — see 2026-08-15 batch) |
+| 011  | Preserve top-level template text nodes [plans/011-preserve-template-text-nodes.md] | strict TDD | P1 | S | 010 (serialize) | DONE |
+| 012  | Stylesheet ownerDocument + error URL reporting [plans/012-stylesheet-ownerdocument-and-error-url.md] | strict TDD | P2 | S/M | 010, 011 (serialize) | DONE (step 4 cross-doc test deferred — jsdom cannot express it) |
+| 013  | Document + pin data replace-vs-merge semantics [plans/013-document-data-semantics.md] | direct | P3 | XS | 010 (serialize) | DONE |
+
+## 2026-08-15 batch (code-health audit follow-up, stamped at `bdbc9eb`)
+
+Plans 010-013 come from a read-only `code-health-audit` pass. Vetted findings
+that produced them: (a) `allowDataImages` documented but unimplemented AND
+`setSanitizerConfig` replaces defaults instead of merging (the documented
+example call drops the `<script>` denylist); (b) `data:image/svg+xml`
+unconditionally allowed; (c) tab-obfuscated `java\tscript:` schemes bypass
+the URL check; (d) documented style-`url()` stripping does not exist;
+(e) `replaceChildren(...fragment.children)` drops top-level template text;
+(f) `loadStylesheet`/`#applyConsumerStyles` fallback use global `document`
+instead of `this.ownerDocument`; (g) the stylesheet error handler logs an
+empty URL; (h) data replace-vs-merge asymmetry undocumented and half-unpinned.
+
+### Execution note (2026-08-15)
+
+Implemented on branch `advisor/implement-010-013` (4 commits ahead of
+`bdbc9eb`) with a user override: **default behavior preserved** — `data:image/*`
+remains allowed by default, no `allowDataImages` field added. The
+breaking-change policy flip in plan 010 was dropped; the three non-breaking
+security/quality fixes (whitespace scheme normalization, style `url()`
+stripping, `setSanitizerConfig` merge) landed. Final state: 105/105 tests
+green, `pnpm run typecheck` exit 0, `pnpm run lint` 0 errors (332 pre-existing
+warnings unchanged). Step 4 of plan 012 (jsdom cross-document ownership test)
+could not be expressed reliably in jsdom and was deferred per the plan's STOP
+condition. AGENTS.md:63's `allowDataImages: true` example replaced with
+`allowCustomElements: true` (real native SanitizerConfig field).
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
@@ -62,6 +93,13 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
   not strictly required.
 - **004 is independent** — can land any time; pair it with 001 so the agent guide
   stops lying about "No tests" ASAP.
+- **010-013 have no hard dependencies** but 010/011/012 all edit
+  `src/components/tooltip/tooltip.mts` and 010/013 both edit `AGENTS.md` +
+  `docs/api-reference.md`, so execute them sequentially in numbered order to
+  avoid merge conflicts. Each plan's drift-check section lists the
+  expected prior-plan edits.
+- **010 is intentionally breaking** (default now strips all `data:` URLs
+  including `data:image/*`); land its doc updates in the same change.
 
 ## Findings considered and rejected
 
@@ -75,6 +113,16 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJE
   (it does in Plan 002, but for template HTML, not stylesheet URLs).
 - **Major-version dependency lag:** not assessed as actionable — TypeScript 7 /
   Vite 8 / Vitest 4 are current at the time of writing per `package.json`.
+- **(2026-08-15 audit) sanitizer test-coverage-only items** (malformed JSON
+  error path, `data` attribute removal no-op, multiple `data-bind` slots per
+  key): LOW leverage on their own — each is a small test-only addition. Fold
+  into whatever plan next touches the corresponding describe blocks rather
+  than dedicated plans.
+- **(2026-08-15 audit) browser e2e harness for the new fixes:** a prior
+  session's playwright verification was ad-hoc (global CLI, nothing
+  committed). Re-establishing a committed harness is worthwhile but larger
+  than any single finding here; deferred as its own future effort if
+  cross-document regressions recur.
 
 ## Plan 003b status
 
